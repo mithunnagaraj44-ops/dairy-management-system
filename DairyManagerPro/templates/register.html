@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="container mt-5">
+    <div class="card p-4 mx-auto" style="max-width:400px;">
+        <h3 class="text-center mb-3">Manager Register</h3>
+
+        <form method="POST" action="/register">
+
+            <label>Phone Number</label>
+            <input type="text" name="phone" class="form-control mb-3" required>
+
+            <label>Password</label>
+            <input type="password" name="password" class="form-control mb-3" required>
+
+            <button class="btn btn-success w-100">Register</button>
+
+        </form>
+
+        <div class="text-center mt-3">
+            <a href="/login">Already have account? Login</a>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
