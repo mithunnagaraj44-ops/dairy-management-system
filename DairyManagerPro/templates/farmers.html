@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<h2 class="mb-4">👨‍🌾 Farmer Management</h2>
+
+<div class="card card-box p-4 mb-4">
+    <form method="POST" class="row g-3">
+
+        <div class="col-md-4">
+            <input type="text" name="name" class="form-control" placeholder="Farmer Name" required>
+        </div>
+
+        <div class="col-md-4">
+            <input type="text" name="phone" class="form-control" placeholder="Phone Number" required>
+        </div>
+
+        <div class="col-md-2">
+            <button class="btn btn-success w-100">Add Farmer</button>
+        </div>
+
+    </form>
+</div>
+
+<div class="card card-box p-4">
+    <h5>Current Farmers</h5>
+
+    <table class="table table-hover mt-3">
+        <thead class="table-primary">
+            <tr>
+                <th>Farmer Code</th>
+                <th>Name</th>
+                <th>Phone</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            {% for f in farmers %}
+            <tr>
+
+                <td>{{ f.farmer_code or 'F---' }}</td>
+
+                <td>{{ f.name }}</td>
+
+                <td>{{ f.phone }}</td>
+
+                <td>
+                    <span class="badge bg-success">Active</span>
+                </td>
+
+                <td>
+
+                    <a href="/edit/{{ f.f_id }}" class="btn btn-sm btn-warning">
+                        ✏️
+                    </a>
+
+                    <!-- ✅ FIXED DELETE (with confirmation) -->
+                    <a href="/delete/{{ f.f_id }}"
+                       class="btn btn-sm btn-danger"
+                       onclick="return confirm('Delete this farmer? All data will be removed.')">
+                        🗑️
+                    </a>
+
+                </td>
+
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+</div>
+
+{% endblock %}

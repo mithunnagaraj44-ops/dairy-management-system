@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="container-fluid p-4">
+
+<h2>💰 Payment Management</h2>
+
+<div class="card p-4 mt-3 shadow">
+
+<form method="POST">
+
+<div class="row">
+
+<div class="col-md-4">
+<label>Farmer</label>
+<select name="farmer" id="farmer" class="form-control" required>
+{% for f in farmers %}
+<option value="{{f.f_id}}">
+{{ f.farmer_code or 'F---' }} - {{f.name}}
+</option>
+{% endfor %}
+</select>
+</div>
+
+<div class="col-md-4">
+<label>Total Amount ₹</label>
+<input type="text" name="amount" id="amount" class="form-control" readonly>
+</div>
+
+<div class="col-md-4">
+<label>Status</label>
+<select name="status" class="form-control">
+<option value="Paid">Paid</option>
+<option value="Unpaid">Unpaid</option>
+</select>
+</div>
+
+</div>
+
+<div class="mt-3">
+<button class="btn btn-primary">Record Settlement</button>
+</div>
+
+</form>
+
+</div>
+
+<div class="card p-4 mt-4 shadow">
+
+<h4>Farmer Payment Summary</h4>
+
+<table class="table mt-3">
+<tr>
+<th>Farmer</th>
+<th>Total Amount</th>
+<th>Status</th>
+<th>Date</th>
+<th>Action</th>
+</tr>
+
+{% for row in data %}
+<tr>
+
+<td>{{ row.farmer_code }} - {{ row.name }}</td>
+
+<td>
+{% if row.total_amount == 0 %}
+<span class="badge bg-success">Paid</span>
+{% else %}
+₹ {{ row.total_amount }}
+{% endif %}
+</td>
+
+<td>
+{% if row.total_amount == 0 %}
+<span class="badge bg-success">Paid</span>
+{% else %}
+<span class="badge bg-danger">Unpaid</span>
+{% endif %}
+</td>
+
+<td>{{ row.payment_date or '-' }}</td>
+
+<td>
+{% if row.total_amount > 0 %}
+<form method="POST" action="/payments">
+    <input type="hidden" name="farmer" value="{{row.f_id}}">
+    <input type="hidden" name="amount" value="{{row.total_amount}}">
+    <input type="hidden" name="status" value="Paid">
+
+    <button class="btn btn-success btn-sm">Mark Paid</button>
+</form>
+{% else %}
+<span class="text-muted">No dues</span>
+{% endif %}
+</td>
+
+</tr>
+{% endfor %}
+
+</table>
+
+</div>
+
+</div>
+
+<script>
+function loadAmount(){
+    let farmer = document.getElementById("farmer").value;
+
+    if(!farmer) return;
+
+    fetch("/get_amount/" + farmer)
+    .then(res => res.json())
+    .then(data => {
+        document.getElementById("amount").value = data.amount ?? 0;
+    })
+    .catch(() => {
+        document.getElementById("amount").value = 0;
+    });
+}
+
+document.getElementById("farmer").addEventListener("change", loadAmount);
+window.addEventListener("DOMContentLoaded", loadAmount);
+</script>
+
+{% endblock %}

@@ -1,0 +1,116 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<h2 class="mb-4">📊 Dashboard</h2>
+
+<div class="row g-4">
+
+<div class="col-md-3">
+    <div class="card text-white bg-primary card-box p-3">
+        <h6>Total Farmers</h6>
+        <h2>{{ farmers }}</h2>
+    </div>
+</div>
+
+<div class="col-md-3">
+    <div class="card text-white bg-success card-box p-3">
+        <h6>Milk Collected</h6>
+        <h2>{{ milk }} L</h2>
+    </div>
+</div>
+
+<div class="col-md-3">
+    <div class="card text-white bg-warning card-box p-3">
+        <h6>Payments (paid)</h6>
+        <h2>₹ {{ payments }}</h2>
+    </div>
+</div>
+
+<div class="col-md-3">
+    <div class="card text-white bg-danger card-box p-3">
+        <h6>Sales</h6>
+        <h2>₹ {{ sales }}</h2>
+    </div>
+</div>
+
+</div>
+
+<div class="row g-3 mt-2 align-items-stretch">
+
+<div class="col-md-8">
+    <div class="card card-box p-3 h-100">
+        <h6 class="mb-2">📈 Sales & Profit Trend</h6>
+
+        <div style="position:relative; height:220px;">
+            <canvas id="chart"></canvas>
+        </div>
+    </div>
+</div>
+
+<div class="col-md-4">
+    <div class="card card-box p-4 text-center h-100 d-flex flex-column justify-content-center">
+        <h5>💰 Net Profit</h5>
+
+        <h1 style="color:green;">
+            ₹ {{ profit }}
+        </h1>
+
+        {% if profit > 0 %}
+            <p class="text-success">Profit 👍</p>
+        {% else %}
+            <p class="text-danger">Loss ⚠️</p>
+        {% endif %}
+
+    </div>
+</div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+const ctx = document.getElementById('chart');
+
+new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+        datasets: [
+            {
+                label: 'Sales',
+                data: {{ sales_data | tojson }},
+                borderWidth: 2,
+                tension: 0.4
+            },
+            {
+                label: 'Profit',
+                data: {{ profit_data | tojson }},
+                borderWidth: 2,
+                tension: 0.4
+            }
+        ]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        layout: {
+            padding: 5
+        },
+        plugins: {
+            legend: {
+                position: 'top'
+            }
+        },
+        scales: {
+            y: {
+                ticks: {
+                    stepSize: 50
+                }
+            }
+        }
+    }
+});
+</script>
+
+{% endblock %}
