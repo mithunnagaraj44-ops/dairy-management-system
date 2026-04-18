@@ -11,7 +11,6 @@ def check_login():
             return redirect('/login')
 
 
-# ================= REGISTER =================
 @app.route('/register', methods=['GET','POST'])
 def register():
     if request.method == 'POST':
@@ -19,12 +18,11 @@ def register():
     return render_template('register.html')
 
 
-# ================= LOGIN =================
 @app.route('/login', methods=['GET','POST'])
 def login():
     if request.method == 'POST':
-        phone = request.form['phone']
-        password = request.form['password']
+        phone = request.form.get('phone')
+        password = request.form.get('password')
 
         if phone == "123" and password == "123":
             session['user'] = phone
@@ -35,14 +33,12 @@ def login():
     return render_template('login.html')
 
 
-# ================= LOGOUT =================
 @app.route('/logout')
 def logout():
     session.clear()
     return redirect('/login')
 
 
-# ================= DASHBOARD =================
 @app.route('/')
 def home():
     return render_template(
@@ -57,8 +53,7 @@ def home():
     )
 
 
-# ================= FARMERS =================
-@app.route('/farmers', methods=['GET','POST'])
+@app.route('/farmers')
 def farmers():
     data = [
         {"f_id":1, "farmer_code":"F101", "name":"Kishor", "phone":"9999"},
@@ -68,13 +63,11 @@ def farmers():
     return render_template('farmers.html', farmers=data)
 
 
-# ================= MILK =================
 @app.route('/milk')
 def milk():
     return render_template('milk.html', data=[], farmers=[])
 
 
-# ================= PAYMENTS =================
 @app.route('/payments')
 def payments():
     data = [
@@ -85,7 +78,6 @@ def payments():
     return render_template('payments.html', data=data, farmers=data)
 
 
-# ================= STOCK =================
 @app.route('/stock')
 def stock():
     data = [
@@ -95,19 +87,16 @@ def stock():
     return render_template('stock.html', data=data)
 
 
-# ================= SALES =================
 @app.route('/sales')
 def sales():
     return render_template('sales.html', data=[], products=[])
 
 
-# ================= HISTORY =================
 @app.route('/history')
 def history():
     return render_template('history.html', data=[], selected_date="2026-04-18")
 
 
-# ================= PROFIT =================
 @app.route('/profit')
 def profit():
     return render_template(
@@ -120,5 +109,6 @@ def profit():
     )
 
 
-if __name__ == '__main__':
-    app.run(debug=True)
+# IMPORTANT FOR RENDER
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=10000)
