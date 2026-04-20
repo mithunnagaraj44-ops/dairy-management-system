@@ -110,19 +110,23 @@ def home():
 
     # ================= FARMERS =================
     cursor.execute("SELECT COUNT(*) as total FROM farmers")
-    farmers = cursor.fetchone()['total']
+    res = cursor.fetchone()
+    farmers = res['total'] if res and res['total'] else 0
 
     # ================= MILK =================
     cursor.execute("SELECT IFNULL(SUM(qty),0) as total FROM milk_collection")
-    milk = float(cursor.fetchone()['total'])
+    res = cursor.fetchone()
+    milk = float(res['total'] if res and res['total'] else 0)
 
     # ================= PAYMENTS =================
     cursor.execute("SELECT IFNULL(SUM(total_amount),0) as total FROM payments")
-    payments = float(cursor.fetchone()['total'])
+    res = cursor.fetchone()
+    payments = float(res['total'] if res and res['total'] else 0)
 
     # ================= SALES =================
     cursor.execute("SELECT IFNULL(SUM(total),0) as total FROM sales")
-    sales = float(cursor.fetchone()['total'])
+    res = cursor.fetchone()
+    sales = float(res['total'] if res and res['total'] else 0)
 
     profit = sales - payments
 
@@ -485,17 +489,19 @@ def profit():
 
     cursor = db.cursor(dictionary=True)
 
-    # Total sales
+    # ================= TOTAL SALES =================
     cursor.execute("SELECT IFNULL(SUM(total),0) as total FROM sales")
-    sales = float(cursor.fetchone()['total'] or 0)
+    res = cursor.fetchone()
+    sales = float(res['total'] if res and res['total'] else 0)
 
-    # Total payments
+    # ================= TOTAL PAYMENTS =================
     cursor.execute("SELECT IFNULL(SUM(total_amount),0) as total FROM payments")
-    payments = float(cursor.fetchone()['total'] or 0)
+    res = cursor.fetchone()
+    payments = float(res['total'] if res and res['total'] else 0)
 
     net_profit = sales - payments
 
-    # Monthly sales
+    # ================= MONTHLY SALES =================
     cursor.execute("""
         SELECT MONTH(date) as m, IFNULL(SUM(total),0) as total
         FROM sales
@@ -506,7 +512,7 @@ def profit():
         if row['m'] and 1 <= row['m'] <= 6:
             sales_data[row['m']-1] = float(row['total'])
 
-    # Monthly payments
+    # ================= MONTHLY PAYMENTS =================
     cursor.execute("""
         SELECT MONTH(payment_date) as m, IFNULL(SUM(total_amount),0) as total
         FROM payments
@@ -517,6 +523,7 @@ def profit():
         if row['m'] and 1 <= row['m'] <= 6:
             payment_data[row['m']-1] = float(row['total'])
 
+    # ================= PROFIT =================
     profit_data = [sales_data[i] - payment_data[i] for i in range(6)]
 
     return render_template(
@@ -586,19 +593,23 @@ def get_amount(farmer_id):
 
     cursor = db.cursor(dictionary=True)
 
+    # ===== TOTAL MILK =====
     cursor.execute("""
         SELECT IFNULL(SUM(amount),0) as total
         FROM milk_collection
         WHERE farmer_id=%s
     """, (farmer_id,))
-    total = cursor.fetchone()['total']
+    res1 = cursor.fetchone()
+    total = res1['total'] if res1 and res1['total'] else 0
 
+    # ===== TOTAL PAID =====
     cursor.execute("""
         SELECT IFNULL(SUM(total_amount),0) as paid
         FROM payments
         WHERE farmer_id=%s AND status='Paid'
     """, (farmer_id,))
-    paid = cursor.fetchone()['paid']
+    res2 = cursor.fetchone()
+    paid = res2['paid'] if res2 and res2['paid'] else 0
 
     amount = float(total) - float(paid)
 
