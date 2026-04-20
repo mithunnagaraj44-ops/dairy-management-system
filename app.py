@@ -345,52 +345,72 @@ def sales():
         return "Database not connected"
 
     cursor = db.cursor(dictionary=True)
+    error = None
+    success = None
 
     if request.method == 'POST':
-        product_id = request.form.get('product_id')
-        quantity = float(request.form.get('quantity') or 0)
+        try:
+            product_id = request.form.get('product_id')
+            quantity = float(request.form.get('quantity') or 0)
 
-        if not product_id or quantity <= 0:
-            return "Invalid input"
+            if not product_id or quantity <= 0:
+                error = "Invalid input"
 
-        cursor.execute("SELECT * FROM stock WHERE product_id=%s", (product_id,))
-        product = cursor.fetchone()
+            else:
+                cursor.execute("SELECT * FROM stock WHERE product_id=%s", (product_id,))
+                product = cursor.fetchone()
 
-        if not product:
-            return "Product not found"
+                if not product:
+                    error = "Product not found"
 
-        if quantity > float(product['quantity']):
-            return "Not enough stock!"
+                elif quantity > float(product['quantity']):
+                    error = f"Only {product['quantity']} items available in stock!"
 
-        total = float(product['price']) * quantity
+                else:
+                    total = float(product['price']) * quantity
 
-        cursor.execute("""
-            INSERT INTO sales (product_id, product_name, price, quantity, total, date)
-            VALUES (%s,%s,%s,%s,%s,CURDATE())
-        """, (
-            product_id,
-            product['product_name'],
-            product['price'],
-            quantity,
-            total
-        ))
+                    cursor.execute("""
+                        INSERT INTO sales 
+                        (product_id, product_name, price, quantity, total, date)
+                        VALUES (%s,%s,%s,%s,%s,CURDATE())
+                    """, (
+                        product_id,
+                        product['product_name'],
+                        product['price'],
+                        quantity,
+                        total
+                    ))
 
-        cursor.execute("""
-            UPDATE stock SET quantity=%s WHERE product_id=%s
-        """, (
-            float(product['quantity']) - quantity,
-            product_id
-        ))
+                    cursor.execute("""
+                        UPDATE stock 
+                        SET quantity=%s 
+                        WHERE product_id=%s
+                    """, (
+                        float(product['quantity']) - quantity,
+                        product_id
+                    ))
 
-        db.commit()
+                    db.commit()
+                    success = "Sale completed successfully!"
 
+        except Exception as e:
+            print("SALES ERROR:", e)
+            error = "Something went wrong"
+
+    # Load data always
     cursor.execute("SELECT * FROM sales ORDER BY id DESC")
     data = cursor.fetchall()
 
     cursor.execute("SELECT * FROM stock")
     products = cursor.fetchall()
 
-    return render_template('sales.html', data=data, products=products)
+    return render_template(
+        'sales.html',
+        data=data,
+        products=products,
+        error=error,
+        success=success
+    )
 
 # ================= HISTORY =================
 @app.route('/history', methods=['GET','POST'])

@@ -3,20 +3,34 @@
 
 <div class="container-fluid p-4">
 
-<h2>🛒 Sales Management</h2>
+<h2 class="fw-bold mb-3">🛒 Sales Management</h2>
 
-<div class="card p-4 mt-3 shadow-sm">
+<!-- ALERTS -->
+{% if error %}
+<div class="alert alert-danger text-center">
+    {{ error }}
+</div>
+{% endif %}
+
+{% if success %}
+<div class="alert alert-success text-center">
+    {{ success }}
+</div>
+{% endif %}
+
+<!-- FORM -->
+<div class="card p-4 mt-3 shadow-sm border-0 rounded-4">
 
 <form method="POST">
 
-<div class="row">
+<div class="row g-3">
 
 <div class="col-md-4">
-<label>Product</label>
+<label class="fw-semibold">Product</label>
 <select name="product_id" id="product" class="form-control" onchange="setPrice()" required>
-<option value="">Select</option>
+<option value="">Select Product</option>
 {% for p in products %}
-<option value="{{ p.product_id }}" data-price="{{ p.price }}">
+<option value="{{ p.product_id }}" data-price="{{ p.price }}" data-stock="{{ p.quantity }}">
 {{ p.product_name }} (Stock: {{ p.quantity }})
 </option>
 {% endfor %}
@@ -24,22 +38,22 @@
 </div>
 
 <div class="col-md-2">
-<label>Price</label>
+<label class="fw-semibold">Price</label>
 <input type="text" id="price" class="form-control" readonly>
 </div>
 
 <div class="col-md-2">
-<label>Quantity</label>
+<label class="fw-semibold">Quantity</label>
 <input type="number" id="qty" name="quantity" class="form-control" min="1" oninput="calculate()" required>
 </div>
 
 <div class="col-md-2">
-<label>Total</label>
+<label class="fw-semibold">Total</label>
 <input type="text" id="total" class="form-control" readonly>
 </div>
 
 <div class="col-md-2 d-flex align-items-end">
-<button class="btn btn-success w-100">Sell</button>
+<button class="btn btn-success w-100 rounded-3">Sell</button>
 </div>
 
 </div>
@@ -48,11 +62,14 @@
 
 </div>
 
-<div class="card mt-4 p-3 shadow-sm">
+<!-- SALES HISTORY -->
+<div class="card mt-4 p-3 shadow-sm border-0 rounded-4">
 
-<h4>Sales History</h4>
+<h4 class="fw-semibold">Sales History</h4>
 
-<table class="table mt-3">
+<div class="table-responsive">
+<table class="table mt-3 table-striped align-middle">
+<thead class="table-light">
 <tr>
 <th>Product</th>
 <th>Price</th>
@@ -60,13 +77,15 @@
 <th>Total</th>
 <th>Date</th>
 </tr>
+</thead>
 
+<tbody>
 {% for row in data %}
 <tr>
 <td>{{ row.product_name }}</td>
-<td>{{ row.price }}</td>
+<td>₹ {{ row.price }}</td>
 <td>{{ row.quantity }}</td>
-<td>{{ row.total }}</td>
+<td>₹ {{ row.total }}</td>
 <td>{{ row.date }}</td>
 </tr>
 {% else %}
@@ -74,8 +93,10 @@
 <td colspan="5" class="text-center text-muted">No sales yet</td>
 </tr>
 {% endfor %}
+</tbody>
 
 </table>
+</div>
 
 </div>
 
@@ -91,13 +112,28 @@ function setPrice(){
         return
     }
 
-    let price = select.options[select.selectedIndex].getAttribute("data-price")
+    let option = select.options[select.selectedIndex]
+    let price = option.getAttribute("data-price")
+
     document.getElementById("price").value = price || ""
+    calculate()
 }
 
 function calculate(){
     let price = parseFloat(document.getElementById("price").value) || 0
     let qty = parseFloat(document.getElementById("qty").value) || 0
+    let select = document.getElementById("product")
+
+    if(select.selectedIndex === 0){
+        return
+    }
+
+    let stock = parseFloat(select.options[select.selectedIndex].getAttribute("data-stock")) || 0
+
+    if(qty > stock){
+        document.getElementById("total").value = ""
+        return
+    }
 
     if(price > 0 && qty > 0){
         document.getElementById("total").value = (price * qty).toFixed(2)
