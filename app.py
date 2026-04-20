@@ -102,33 +102,49 @@ def home():
     if db is None:
         return "Database not connected"
 
-    cursor = db.cursor()
+    cursor = db.cursor(dictionary=True)
 
-    try:
-        cursor.execute("SELECT COUNT(*) FROM farmers")
-        farmers = cursor.fetchone()[0]
-    except:
-        farmers = 0
+    # Farmers
+    cursor.execute("SELECT COUNT(*) as total FROM farmers")
+    farmers = cursor.fetchone()['total']
 
-    try:
-        cursor.execute("SELECT IFNULL(SUM(quantity),0) FROM milk")
-        milk = float(cursor.fetchone()[0])
-    except:
-        milk = 0
+    # Milk
+    cursor.execute("SELECT IFNULL(SUM(quantity),0) as total FROM milk")
+    milk = float(cursor.fetchone()['total'])
 
-    try:
-        cursor.execute("SELECT IFNULL(SUM(total_amount),0) FROM payments")
-        payments = float(cursor.fetchone()[0])
-    except:
-        payments = 0
+    # Payments
+    cursor.execute("SELECT IFNULL(SUM(total_amount),0) as total FROM payments")
+    payments = float(cursor.fetchone()['total'])
 
-    try:
-        cursor.execute("SELECT IFNULL(SUM(total_price),0) FROM sales")
-        sales = float(cursor.fetchone()[0])
-    except:
-        sales = 0
+    # ✅ FIXED SALES
+    cursor.execute("SELECT IFNULL(SUM(total),0) as total FROM sales")
+    sales = float(cursor.fetchone()['total'])
 
     profit = sales - payments
+
+    # Monthly sales
+    cursor.execute("""
+        SELECT MONTH(date) as m, IFNULL(SUM(total),0) as total
+        FROM sales
+        GROUP BY MONTH(date)
+    """)
+    sales_data = [0]*6
+    for row in cursor.fetchall():
+        if row['m'] and row['m'] <= 6:
+            sales_data[row['m']-1] = float(row['total'])
+
+    # Monthly payments
+    cursor.execute("""
+        SELECT MONTH(payment_date) as m, IFNULL(SUM(total_amount),0) as total
+        FROM payments
+        GROUP BY MONTH(payment_date)
+    """)
+    payment_data = [0]*6
+    for row in cursor.fetchall():
+        if row['m'] and row['m'] <= 6:
+            payment_data[row['m']-1] = float(row['total'])
+
+    profit_data = [sales_data[i] - payment_data[i] for i in range(6)]
 
     return render_template(
         'index.html',
@@ -137,8 +153,8 @@ def home():
         payments=payments,
         sales=sales,
         profit=profit,
-        sales_data=[0]*6,
-        profit_data=[0]*6
+        sales_data=sales_data,
+        profit_data=profit_data
     )
 
 
