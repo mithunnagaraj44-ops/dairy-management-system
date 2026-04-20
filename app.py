@@ -1,11 +1,26 @@
 from flask import Flask, render_template, request, redirect, session, jsonify
 import mysql.connector
+from mysql.connector import Error
+import os
 
 app = Flask(__name__)
 app.secret_key = "secret123"
 
 
-# ✅ ONLY ONE before_request (keep this ONE only)
+def get_db():
+    try:
+        return mysql.connector.connect(
+            host=os.getenv("DB_HOST"),
+            user=os.getenv("DB_USER"),
+            password=os.getenv("DB_PASSWORD"),
+            database=os.getenv("DB_NAME"),
+            port=int(os.getenv("DB_PORT") or 3306)
+        )
+    except Error as e:
+        print("DB ERROR:", e)
+        return None
+
+
 @app.before_request
 def check_login():
     if request.endpoint not in ['login', 'register', 'static']:
@@ -13,19 +28,12 @@ def check_login():
             return redirect('/login')
 
 
-def get_db():
-    return mysql.connector.connect(
-        host="localhost",
-        user="root",
-        password="",
-        database="dairy_db"
-    )
-
-
 # ================= REGISTER =================
 @app.route('/register', methods=['GET','POST'])
 def register():
     db = get_db()
+    if db is None:
+        return "Database not connected"
     cursor = db.cursor(dictionary=True)
 
     if request.method == 'POST':
@@ -56,6 +64,8 @@ def register():
 @app.route('/login', methods=['GET','POST'])
 def login():
     db = get_db()
+    if db is None:
+        return "Database not connected"
     cursor = db.cursor(dictionary=True)
 
     if request.method == 'POST':
@@ -84,19 +94,12 @@ def logout():
     return redirect('/login')
 
 
-# ================= PROTECT =================
-@app.before_request
-def check_login():
-    if request.endpoint not in ['login', 'register', 'static']:
-        if 'user' not in session:
-            return redirect('/login')
-        
-
-
 # ================= DASHBOARD =================
 @app.route('/')
 def home():
     db = get_db()
+    if db is None:
+        return "Database not connected"
     cursor = db.cursor()
 
     cursor.execute("SELECT COUNT(*) FROM farmers")
@@ -150,17 +153,20 @@ def home():
         sales_data=sales_data,
         profit_data=profit_data
     )
+
+
 # ================= FARMERS =================
 @app.route('/farmers', methods=['GET','POST'])
 def farmers():
     db = get_db()
+    if db is None:
+        return "Database not connected"
     cursor = db.cursor(dictionary=True)
 
     if request.method == 'POST':
         name = request.form['name']
         phone = request.form['phone']
 
-        # ✅ GET ALL EXISTING CODES
         cursor.execute("SELECT farmer_code FROM farmers")
         codes = cursor.fetchall()
 
@@ -170,7 +176,6 @@ def farmers():
             if c['farmer_code'] and c['farmer_code'].startswith('F')
         ])
 
-        # ✅ FIND FIRST MISSING NUMBER (START FROM 101)
         new_num = 101
         for num in used:
             if num == new_num:
@@ -180,7 +185,6 @@ def farmers():
 
         farmer_code = f"F{new_num}"
 
-        # ✅ INSERT
         cursor.execute("""
             INSERT INTO farmers(farmer_code,name,phone,status)
             VALUES(%s,%s,%s,'Active')
@@ -193,10 +197,13 @@ def farmers():
 
     return render_template('farmers.html', farmers=data)
 
+
 # ================= MILK =================
 @app.route('/milk', methods=['GET','POST'])
 def milk():
     db = get_db()
+    if db is None:
+        return "Database not connected"
     cursor = db.cursor(dictionary=True)
 
     if request.method == 'POST':
@@ -231,10 +238,13 @@ def milk():
 
     return render_template('milk.html', data=data, farmers=farmers)
 
+
 # ================= PAYMENTS =================
 @app.route('/payments', methods=['GET','POST'])
 def payments():
     db = get_db()
+    if db is None:
+        return "Database not connected"
     cursor = db.cursor(dictionary=True)
 
     if request.method == 'POST':
@@ -249,7 +259,6 @@ def payments():
 
         db.commit()
 
-    # ✅ CORRECT QUERY (NO JOIN BUG)
     cursor.execute("""
         SELECT 
             f.f_id,
@@ -279,7 +288,6 @@ def payments():
 
     data = cursor.fetchall()
 
-    # ✅ CALCULATE PENDING
     for row in data:
         total = float(row['total_milk'] or 0)
         paid = float(row['paid'] or 0)
@@ -292,11 +300,12 @@ def payments():
     return render_template('payments.html', data=data, farmers=farmers)
 
 
-
 # ================= STOCK =================
 @app.route('/stock', methods=['GET','POST'])
 def stock():
     db = get_db()
+    if db is None:
+        return "Database not connected"
     cursor = db.cursor(dictionary=True)
 
     if request.method == 'POST':
@@ -316,10 +325,13 @@ def stock():
 
     return render_template('stock.html', data=data)
 
+
 # ================= SALES =================
 @app.route('/sales', methods=['GET','POST'])
 def sales():
     db = get_db()
+    if db is None:
+        return "Database not connected"
     cursor = db.cursor(dictionary=True)
 
     if request.method == 'POST':
@@ -354,10 +366,13 @@ def sales():
 
     return render_template('sales.html', data=data, products=products)
 
+
 # ================= HISTORY =================
 @app.route('/history', methods=['GET','POST'])
 def history():
     db = get_db()
+    if db is None:
+        return "Database not connected"
     cursor = db.cursor(dictionary=True)
 
     selected_date = request.form.get('date')
@@ -378,16 +393,18 @@ def history():
 
     return render_template('history.html', data=data, selected_date=selected_date)
 
+
 # ================= PROFIT =================
 @app.route('/profit')
 def profit():
     db = get_db()
+    if db is None:
+        return "Database not connected"
     cursor = db.cursor()
 
     cursor.execute("SELECT IFNULL(SUM(total),0) FROM sales")
     sales = float(cursor.fetchone()[0])
 
-    # ✅ ONLY PAID
     cursor.execute("""
         SELECT IFNULL(SUM(total_amount),0)
         FROM payments
@@ -397,7 +414,6 @@ def profit():
 
     net_profit = sales - payments
 
-    # Monthly sales
     cursor.execute("""
         SELECT MONTH(date), IFNULL(SUM(total),0)
         FROM sales
@@ -409,7 +425,6 @@ def profit():
         if m <= 6:
             sales_data[m-1] = float(row[1])
 
-    # Monthly PAID payments
     cursor.execute("""
         SELECT MONTH(payment_date), IFNULL(SUM(total_amount),0)
         FROM payments
@@ -435,9 +450,12 @@ def profit():
         profit_data=profit_data
     )
 
+
 @app.route('/edit/<int:id>', methods=['GET','POST'])
 def edit_farmer(id):
     db = get_db()
+    if db is None:
+        return "Database not connected"
     cursor = db.cursor(dictionary=True)
 
     if request.method == 'POST':
@@ -452,24 +470,27 @@ def edit_farmer(id):
 
     return render_template('edit_farmer.html', farmer=farmer)
 
+
 @app.route('/delete/<int:id>')
 def delete_farmer(id):
     db = get_db()
+    if db is None:
+        return "Database not connected"
     cursor = db.cursor()
 
-    # delete related data first
     cursor.execute("DELETE FROM milk_collection WHERE farmer_id=%s", (id,))
     cursor.execute("DELETE FROM payments WHERE farmer_id=%s", (id,))
-
-    # now delete farmer
     cursor.execute("DELETE FROM farmers WHERE f_id=%s", (id,))
 
     db.commit()
     return redirect('/farmers')
 
+
 @app.route('/delete_stock/<int:id>')
 def delete_stock(id):
     db = get_db()
+    if db is None:
+        return "Database not connected"
     cursor = db.cursor()
 
     cursor.execute("DELETE FROM stock WHERE id=%s", (id,))
@@ -477,12 +498,14 @@ def delete_stock(id):
 
     return redirect('/stock')
 
+
 @app.route('/get_amount/<int:farmer_id>')
 def get_amount(farmer_id):
     db = get_db()
+    if db is None:
+        return {"amount": 0}
     cursor = db.cursor(dictionary=True)
 
-    # total milk
     cursor.execute("""
         SELECT IFNULL(SUM(amount),0) as total
         FROM milk_collection
@@ -490,7 +513,6 @@ def get_amount(farmer_id):
     """, (farmer_id,))
     total = cursor.fetchone()['total']
 
-    # total paid
     cursor.execute("""
         SELECT IFNULL(SUM(total_amount),0) as paid
         FROM payments
@@ -502,9 +524,12 @@ def get_amount(farmer_id):
 
     return {"amount": round(max(amount, 0), 2)}
 
+
 @app.route('/edit_stock/<int:id>', methods=['GET','POST'])
 def edit_stock(id):
     db = get_db()
+    if db is None:
+        return "Database not connected"
     cursor = db.cursor(dictionary=True)
 
     if request.method == 'POST':
@@ -527,8 +552,5 @@ def edit_stock(id):
     return render_template('edit_stock.html', data=data)
 
 
-from flask import session, redirect, url_for
-
-
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run()
