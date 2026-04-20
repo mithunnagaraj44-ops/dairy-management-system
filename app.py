@@ -366,6 +366,7 @@ def sales():
         return "Database not connected"
 
     cursor = db.cursor(dictionary=True)
+    user = session.get('user')
 
     error = None
     success = None
@@ -378,10 +379,10 @@ def sales():
             if not product_id or quantity <= 0:
                 error = "Invalid input"
             else:
-                cursor.execute(
-                    "SELECT * FROM stock WHERE product_id=%s",
-                    (product_id,)
-                )
+                cursor.execute("""
+                    SELECT * FROM stock 
+                    WHERE product_id=%s AND user_phone=%s
+                """, (product_id, user))
                 product = cursor.fetchone()
 
                 if not product:
@@ -393,23 +394,25 @@ def sales():
 
                     cursor.execute("""
                         INSERT INTO sales
-                        (product_id, product_name, price, quantity, total, date)
-                        VALUES (%s,%s,%s,%s,%s,CURDATE())
+                        (product_id, product_name, price, quantity, total, date, user_phone)
+                        VALUES (%s,%s,%s,%s,%s,CURDATE(),%s)
                     """, (
                         product_id,
                         product['product_name'],
                         product['price'],
                         quantity,
-                        total
+                        total,
+                        user
                     ))
 
                     cursor.execute("""
                         UPDATE stock 
                         SET quantity=%s 
-                        WHERE product_id=%s
+                        WHERE product_id=%s AND user_phone=%s
                     """, (
                         float(product['quantity']) - quantity,
-                        product_id
+                        product_id,
+                        user
                     ))
 
                     db.commit()
@@ -419,10 +422,17 @@ def sales():
             print("SALES ERROR:", e)
             error = "Something went wrong"
 
-    cursor.execute("SELECT * FROM sales ORDER BY id DESC")
+    cursor.execute("""
+        SELECT * FROM sales 
+        WHERE user_phone=%s
+        ORDER BY id DESC
+    """, (user,))
     data = cursor.fetchall()
 
-    cursor.execute("SELECT * FROM stock")
+    cursor.execute("""
+        SELECT * FROM stock 
+        WHERE user_phone=%s
+    """, (user,))
     products = cursor.fetchall()
 
     cursor.close()
