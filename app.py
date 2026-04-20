@@ -81,8 +81,8 @@ def login():
         if user:
             session['user'] = user['phone']
             return redirect('/')
-        else:
-            return "Invalid login"
+    else:
+    return render_template('login.html', error="Invalid phone or password")
 
     return render_template('login.html')
 
