@@ -66,6 +66,7 @@ def login():
     db = get_db()
     if db is None:
         return "Database not connected"
+
     cursor = db.cursor(dictionary=True)
 
     if request.method == 'POST':
@@ -79,10 +80,10 @@ def login():
         user = cursor.fetchone()
 
         if user:
-    session['user'] = user['phone']
-    return redirect('/')
-else:
-    return render_template('login.html', error="Invalid phone or password")
+            session['user'] = user['phone']
+            return redirect('/')
+        else:
+            return render_template('login.html', error="Invalid phone or password")
 
     return render_template('login.html')
 
