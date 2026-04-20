@@ -292,21 +292,29 @@ def stock():
     db = get_db()
     if db is None:
         return "Database not connected"
+
     cursor = db.cursor(dictionary=True)
 
     if request.method == 'POST':
-        cursor.execute("""
-            INSERT INTO stock (product_id,product_name,price,quantity,last_updated)
-            VALUES (%s,%s,%s,%s,CURDATE())
-        """, (
-            request.form['product_id'],
-            request.form['product_name'],
-            float(request.form['price']),
-            float(request.form['quantity'])
-        ))
-        db.commit()
+        try:
+            product_id = request.form.get('product_id')
+            product_name = request.form.get('product_name')
+            price = float(request.form.get('price') or 0)
+            quantity = int(request.form.get('quantity') or 0)
 
-    cursor.execute("SELECT * FROM stock ORDER BY id DESC")
+            cursor.execute("""
+                INSERT INTO stock 
+                (product_id, product_name, price, quantity, last_updated)
+                VALUES (%s, %s, %s, %s, CURDATE())
+            """, (product_id, product_name, price, quantity))
+
+            db.commit()
+
+        except Exception as e:
+            print("STOCK ERROR:", e)
+            return "Error adding stock"
+
+    cursor.execute("SELECT * FROM stock ORDER BY last_updated DESC")
     data = cursor.fetchall()
 
     return render_template('stock.html', data=data)

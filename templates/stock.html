@@ -17,7 +17,7 @@
 
 <div class="col-md-3">
 <label>Product</label>
-<input type="text" name="product_name" class="form-control" placeholder="Enter product name" required>
+<input type="text" name="product_name" class="form-control" required>
 </div>
 
 <div class="col-md-2">
@@ -31,7 +31,7 @@
 </div>
 
 <div class="col-md-2 d-flex align-items-end">
-<button class="btn btn-primary w-100">Add Stock</button>
+<button type="submit" class="btn btn-primary w-100">Add Stock</button>
 </div>
 
 </div>
@@ -43,7 +43,8 @@
 
 <h4>Stock Summary</h4>
 
-<table class="table mt-3">
+<table class="table mt-3 table-bordered table-striped">
+<thead>
 <tr>
 <th>Product ID</th>
 <th>Product</th>
@@ -52,22 +53,28 @@
 <th>Date</th>
 <th>Actions</th>
 </tr>
+</thead>
 
+<tbody>
 {% for row in data %}
 <tr>
-<td>{{row.product_id}}</td>
-<td>{{row.product_name}}</td>
-<td>{{row.price}}</td>
-<td>{{row.quantity}}</td>
-<td>{{row.last_updated}}</td>
+<td>{{ row.product_id }}</td>
+<td>{{ row.product_name }}</td>
+<td>{{ row.price }}</td>
+<td>{{ row.quantity }}</td>
+<td>{{ row.last_updated }}</td>
 
 <td>
-<a href="/edit_stock/{{row.id}}" class="btn btn-warning btn-sm">Edit</a>
-<a href="/delete_stock/{{row.id}}" class="btn btn-danger btn-sm">Delete</a>
+<a href="/edit_stock/{{ row.product_id }}" class="btn btn-warning btn-sm">Edit</a>
+<a href="/delete_stock/{{ row.product_id }}" class="btn btn-danger btn-sm">Delete</a>
 </td>
-
+</tr>
+{% else %}
+<tr>
+<td colspan="6" class="text-center">No stock data available</td>
 </tr>
 {% endfor %}
+</tbody>
 
 </table>
 
