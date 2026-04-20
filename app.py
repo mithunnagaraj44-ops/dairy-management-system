@@ -108,15 +108,15 @@ def home():
     cursor.execute("SELECT COUNT(*) as total FROM farmers")
     farmers = cursor.fetchone()['total']
 
-    # Milk
-   cursor.execute("SELECT IFNULL(SUM(quantity),0) FROM milk_collection")
+    # Milk ✅ FIXED
+    cursor.execute("SELECT IFNULL(SUM(qty),0) as total FROM milk_collection")
     milk = float(cursor.fetchone()['total'])
 
     # Payments
     cursor.execute("SELECT IFNULL(SUM(total_amount),0) as total FROM payments")
     payments = float(cursor.fetchone()['total'])
 
-    # ✅ FIXED SALES
+    # Sales
     cursor.execute("SELECT IFNULL(SUM(total),0) as total FROM sales")
     sales = float(cursor.fetchone()['total'])
 
