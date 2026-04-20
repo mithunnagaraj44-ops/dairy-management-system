@@ -375,57 +375,62 @@ def sales():
 
     if request.method == 'POST':
         try:
-            product_id = request.form.get('product_id').strip()
+            product_id = (request.form.get('product_id') or "").strip()
             quantity = float(request.form.get('quantity') or 0)
 
-            if not product_id or quantity <= 0:
-                error = "Invalid input"
+            print("FORM:", product_id, quantity)
+
+            if not product_id:
+                error = "Please select a product"
+            elif quantity <= 0:
+                error = "Enter valid quantity"
             else:
-                cursor.execute("""
-                    SELECT * FROM stock 
-                    WHERE product_id=%s
-                """, (product_id,))
+                cursor.execute("SELECT * FROM stock WHERE product_id=%s", (product_id,))
                 product = cursor.fetchone()
+
+                print("PRODUCT:", product)
 
                 if not product:
                     error = "Product not found"
-                elif quantity > float(product['quantity']):
-                    error = f"Only {product['quantity']} items available!"
                 else:
-                    total = float(product['price']) * quantity
+                    stock_qty = float(product['quantity'] or 0)
+                    price = float(product['price'] or 0)
 
-                    cursor.execute("""
-                        INSERT INTO sales
-                        (product_id, product_name, price, quantity, total, date)
-                        VALUES (%s,%s,%s,%s,%s,CURDATE())
-                    """, (
-                        product_id,
-                        product['product_name'],
-                        product['price'],
-                        quantity,
-                        total
-                    ))
+                    if quantity > stock_qty:
+                        error = f"Only {stock_qty} items available!"
+                    else:
+                        total = price * quantity
 
-                    cursor.execute("""
-                        UPDATE stock 
-                        SET quantity=%s 
-                        WHERE product_id=%s
-                    """, (
-                        float(product['quantity']) - quantity,
-                        product_id
-                    ))
+                        cursor.execute("""
+                            INSERT INTO sales
+                            (product_id, product_name, price, quantity, total, date)
+                            VALUES (%s,%s,%s,%s,%s,CURDATE())
+                        """, (
+                            product_id,
+                            product['product_name'],
+                            price,
+                            quantity,
+                            total
+                        ))
 
-                    db.commit()
-                    success = "Sale completed successfully!"
+                        cursor.execute("""
+                            UPDATE stock 
+                            SET quantity=%s 
+                            WHERE product_id=%s
+                        """, (
+                            stock_qty - quantity,
+                            product_id
+                        ))
+
+                        db.commit()
+                        print("SALE SUCCESS")
+                        success = "Sale completed successfully!"
 
         except Exception as e:
             print("SALES ERROR:", e)
             error = str(e)
 
-    cursor.execute("""
-        SELECT * FROM sales 
-        ORDER BY date DESC
-    """)
+    cursor.execute("SELECT * FROM sales ORDER BY date DESC")
     data = cursor.fetchall()
 
     cursor.execute("SELECT * FROM stock")
