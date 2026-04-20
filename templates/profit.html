@@ -2,42 +2,44 @@
 
 {% block content %}
 
-<h2 class="mb-4">📈 Profit Report</h2>
+<div class="container-fluid p-4">
 
-<div class="row g-4">
+  <h2 class="mb-4">📈 Profit Report</h2>
 
-<div class="col-md-4">
-    <div class="card bg-success text-white p-3">
+  <div class="row g-4">
+
+    <div class="col-md-4">
+      <div class="card bg-success text-white p-3">
         <h6>Total Sales</h6>
-        <h2>₹ {{ sales }}</h2>
+        <h2>₹ {{ sales if sales is not none else 0 }}</h2>
+      </div>
     </div>
-</div>
 
-<div class="col-md-4">
-    <div class="card bg-warning text-white p-3">
+    <div class="col-md-4">
+      <div class="card bg-warning text-white p-3">
         <h6>Total Payments</h6>
-        <h2>₹ {{ payments }}</h2>
+        <h2>₹ {{ payments if payments is not none else 0 }}</h2>
+      </div>
     </div>
-</div>
 
-<div class="col-md-4">
-    <div class="card bg-primary text-white p-3">
+    <div class="col-md-4">
+      <div class="card bg-primary text-white p-3">
         <h6>Net Profit</h6>
-        <h2>₹ {{ net_profit }}</h2>
+        <h2>₹ {{ net_profit if net_profit is not none else 0 }}</h2>
+      </div>
     </div>
-</div>
 
-</div>
+  </div>
 
-<br>
+  <br>
 
-<div class="card p-4">
+  <div class="card p-4">
+    <h5>📊 Monthly Profit Trend</h5>
 
-<h5>📊 Monthly Profit Trend</h5>
-
-<div style="height:300px;">
-<canvas id="chart"></canvas>
-</div>
+    <div style="height:300px;">
+      <canvas id="chart"></canvas>
+    </div>
+  </div>
 
 </div>
 
@@ -46,27 +48,31 @@
 <script>
 const ctx = document.getElementById('chart');
 
+// Keep Jinja simple. Backend must always send arrays (e.g., [0]*6)
+const salesData = JSON.parse('{{ sales_data | tojson | safe }}');
+const profitData = JSON.parse('{{ profit_data | tojson | safe }}');
+
 new Chart(ctx, {
-    type: 'bar',
-    data: {
-        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-        datasets: [
-            {
-                label: 'Sales',
-                data: {{ sales_data | tojson }},
-                borderWidth: 2
-            },
-            {
-                label: 'Profit',
-                data: {{ profit_data | tojson }},
-                borderWidth: 2
-            }
-        ]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: false
-    }
+  type: 'bar',
+  data: {
+    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+    datasets: [
+      {
+        label: 'Sales',
+        data: salesData,
+        borderWidth: 2
+      },
+      {
+        label: 'Profit',
+        data: profitData,
+        borderWidth: 2
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false
+  }
 });
 </script>
 

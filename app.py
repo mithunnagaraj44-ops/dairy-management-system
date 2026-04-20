@@ -327,31 +327,46 @@ def sales():
     db = get_db()
     if db is None:
         return "Database not connected"
+
     cursor = db.cursor(dictionary=True)
 
     if request.method == 'POST':
-        product_id = request.form['product_id']
-        quantity = float(request.form['quantity'])
+        product_id = request.form.get('product_id')
+        quantity = float(request.form.get('quantity') or 0)
+
+        if not product_id or quantity <= 0:
+            return "Invalid input"
 
         cursor.execute("SELECT * FROM stock WHERE product_id=%s", (product_id,))
         product = cursor.fetchone()
 
-        if product:
-            if quantity > product['quantity']:
-                return "Not enough stock!"
+        if not product:
+            return "Product not found"
 
-            total = product['price'] * quantity
+        if quantity > float(product['quantity']):
+            return "Not enough stock!"
 
-            cursor.execute("""
-                INSERT INTO sales (product_id,product_name,price,quantity,total,date)
-                VALUES (%s,%s,%s,%s,%s,CURDATE())
-            """, (product_id, product['product_name'], product['price'], quantity, total))
+        total = float(product['price']) * quantity
 
-            cursor.execute("""
-                UPDATE stock SET quantity=%s WHERE product_id=%s
-            """, (product['quantity'] - quantity, product_id))
+        cursor.execute("""
+            INSERT INTO sales (product_id, product_name, price, quantity, total, date)
+            VALUES (%s,%s,%s,%s,%s,CURDATE())
+        """, (
+            product_id,
+            product['product_name'],
+            product['price'],
+            quantity,
+            total
+        ))
 
-            db.commit()
+        cursor.execute("""
+            UPDATE stock SET quantity=%s WHERE product_id=%s
+        """, (
+            float(product['quantity']) - quantity,
+            product_id
+        ))
+
+        db.commit()
 
     cursor.execute("SELECT * FROM sales ORDER BY id DESC")
     data = cursor.fetchall()
@@ -360,7 +375,6 @@ def sales():
     products = cursor.fetchall()
 
     return render_template('sales.html', data=data, products=products)
-
 
 # ================= HISTORY =================
 @app.route('/history', methods=['GET','POST'])
@@ -395,42 +409,43 @@ def profit():
     db = get_db()
     if db is None:
         return "Database not connected"
-    cursor = db.cursor()
 
-    cursor.execute("SELECT IFNULL(SUM(total),0) FROM sales")
-    sales = float(cursor.fetchone()[0])
+    cursor = db.cursor(dictionary=True)
+
+    cursor.execute("SELECT IFNULL(SUM(total),0) as total FROM sales")
+    sales = float(cursor.fetchone()['total'])
 
     cursor.execute("""
-        SELECT IFNULL(SUM(total_amount),0)
+        SELECT IFNULL(SUM(total_amount),0) as total
         FROM payments
         WHERE status='Paid'
     """)
-    payments = float(cursor.fetchone()[0])
+    payments = float(cursor.fetchone()['total'])
 
     net_profit = sales - payments
 
     cursor.execute("""
-        SELECT MONTH(date), IFNULL(SUM(total),0)
+        SELECT MONTH(date) as m, IFNULL(SUM(total),0) as total
         FROM sales
         GROUP BY MONTH(date)
     """)
     sales_data = [0]*6
     for row in cursor.fetchall():
-        m = int(row[0])
+        m = int(row['m'])
         if m <= 6:
-            sales_data[m-1] = float(row[1])
+            sales_data[m-1] = float(row['total'])
 
     cursor.execute("""
-        SELECT MONTH(payment_date), IFNULL(SUM(total_amount),0)
+        SELECT MONTH(payment_date) as m, IFNULL(SUM(total_amount),0) as total
         FROM payments
         WHERE status='Paid'
         GROUP BY MONTH(payment_date)
     """)
     payment_data = [0]*6
     for row in cursor.fetchall():
-        m = int(row[0])
+        m = int(row['m'])
         if m <= 6:
-            payment_data[m-1] = float(row[1])
+            payment_data[m-1] = float(row['total'])
 
     profit_data = []
     for i in range(6):
@@ -444,7 +459,6 @@ def profit():
         sales_data=sales_data,
         profit_data=profit_data
     )
-
 
 @app.route('/edit/<int:id>', methods=['GET','POST'])
 def edit_farmer(id):
@@ -486,6 +500,7 @@ def delete_stock(id):
     db = get_db()
     if db is None:
         return "Database not connected"
+
     cursor = db.cursor()
 
     cursor.execute("DELETE FROM stock WHERE id=%s", (id,))
@@ -525,12 +540,19 @@ def edit_stock(id):
     db = get_db()
     if db is None:
         return "Database not connected"
+
     cursor = db.cursor(dictionary=True)
 
+    cursor.execute("SELECT * FROM stock WHERE id=%s", (id,))
+    data = cursor.fetchone()
+
+    if not data:
+        return "Product not found"
+
     if request.method == 'POST':
-        product_name = request.form['product_name']
-        price = request.form['price']
-        quantity = request.form['quantity']
+        product_name = request.form.get('product_name')
+        price = float(request.form.get('price') or 0)
+        quantity = float(request.form.get('quantity') or 0)
 
         cursor.execute("""
             UPDATE stock
@@ -541,11 +563,7 @@ def edit_stock(id):
         db.commit()
         return redirect('/stock')
 
-    cursor.execute("SELECT * FROM stock WHERE id=%s", (id,))
-    data = cursor.fetchone()
-
     return render_template('edit_stock.html', data=data)
-
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
