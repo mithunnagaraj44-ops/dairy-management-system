@@ -366,7 +366,6 @@ def sales():
         return "Database not connected"
 
     cursor = db.cursor(dictionary=True)
-
     user = session.get('user')
 
     error = None
@@ -380,10 +379,10 @@ def sales():
             if not product_id or quantity <= 0:
                 error = "Invalid input"
             else:
-                cursor.execute("""
-                    SELECT * FROM stock 
-                    WHERE product_id=%s AND user_phone=%s
-                """, (product_id, user))
+                cursor.execute(
+                    "SELECT * FROM stock WHERE product_id=%s AND user_phone=%s",
+                    (product_id, user)
+                )
                 product = cursor.fetchone()
 
                 if not product:
@@ -423,19 +422,16 @@ def sales():
             print("SALES ERROR:", e)
             error = "Something went wrong"
 
-    # LOAD SALES (USER ONLY)
-    cursor.execute("""
-        SELECT * FROM sales 
-        WHERE user_phone=%s
-        ORDER BY id DESC
-    """, (user,))
+    cursor.execute(
+        "SELECT * FROM sales WHERE user_phone=%s ORDER BY id DESC",
+        (user,)
+    )
     data = cursor.fetchall()
 
-    # LOAD PRODUCTS (USER ONLY)
-    cursor.execute("""
-        SELECT * FROM stock 
-        WHERE user_phone=%s
-    """, (user,))
+    cursor.execute(
+        "SELECT * FROM stock WHERE user_phone=%s",
+        (user,)
+    )
     products = cursor.fetchall()
 
     cursor.close()
@@ -448,7 +444,6 @@ def sales():
         error=error,
         success=success
     )
-
 
 # ================= HISTORY =================
 @app.route('/history', methods=['GET','POST'])
