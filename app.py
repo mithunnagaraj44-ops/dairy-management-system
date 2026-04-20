@@ -350,7 +350,10 @@ def stock():
             print("STOCK ERROR:", e)
             return "Error adding stock"
 
-    cursor.execute("SELECT * FROM stock ORDER BY last_updated DESC")
+    cursor.execute("""
+        SELECT * FROM stock 
+        ORDER BY last_updated DESC
+    """)
     data = cursor.fetchall()
 
     cursor.close()
@@ -366,7 +369,6 @@ def sales():
         return "Database not connected"
 
     cursor = db.cursor(dictionary=True)
-    user = session.get('user')
 
     error = None
     success = None
@@ -381,8 +383,8 @@ def sales():
             else:
                 cursor.execute("""
                     SELECT * FROM stock 
-                    WHERE product_id=%s AND user_phone=%s
-                """, (product_id, user))
+                    WHERE product_id=%s
+                """, (product_id,))
                 product = cursor.fetchone()
 
                 if not product:
@@ -394,25 +396,23 @@ def sales():
 
                     cursor.execute("""
                         INSERT INTO sales
-                        (product_id, product_name, price, quantity, total, date, user_phone)
-                        VALUES (%s,%s,%s,%s,%s,CURDATE(),%s)
+                        (product_id, product_name, price, quantity, total, date)
+                        VALUES (%s,%s,%s,%s,%s,CURDATE())
                     """, (
                         product_id,
                         product['product_name'],
                         product['price'],
                         quantity,
-                        total,
-                        user
+                        total
                     ))
 
                     cursor.execute("""
                         UPDATE stock 
                         SET quantity=%s 
-                        WHERE product_id=%s AND user_phone=%s
+                        WHERE product_id=%s
                     """, (
                         float(product['quantity']) - quantity,
-                        product_id,
-                        user
+                        product_id
                     ))
 
                     db.commit()
@@ -424,15 +424,13 @@ def sales():
 
     cursor.execute("""
         SELECT * FROM sales 
-        WHERE user_phone=%s
         ORDER BY id DESC
-    """, (user,))
+    """)
     data = cursor.fetchall()
 
     cursor.execute("""
-        SELECT * FROM stock 
-        WHERE user_phone=%s
-    """, (user,))
+        SELECT * FROM stock
+    """)
     products = cursor.fetchall()
 
     cursor.close()
@@ -445,7 +443,6 @@ def sales():
         error=error,
         success=success
     )
-
 # ================= HISTORY =================
 @app.route('/history', methods=['GET','POST'])
 def history():
