@@ -385,7 +385,13 @@ def sales():
             elif quantity <= 0:
                 error = "Enter valid quantity"
             else:
-                cursor.execute("SELECT * FROM stock WHERE product_id=%s", (product_id,))
+                # convert to int to match '01' vs '1'
+                pid = int(product_id)
+
+                cursor.execute("""
+                    SELECT * FROM stock 
+                    WHERE CAST(product_id AS UNSIGNED) = %s
+                """, (pid,))
                 product = cursor.fetchone()
 
                 print("PRODUCT:", product)
@@ -406,7 +412,7 @@ def sales():
                             (product_id, product_name, price, quantity, total, date)
                             VALUES (%s,%s,%s,%s,%s,CURDATE())
                         """, (
-                            product_id,
+                            product['product_id'],   # keeps '01'
                             product['product_name'],
                             price,
                             quantity,
@@ -416,10 +422,10 @@ def sales():
                         cursor.execute("""
                             UPDATE stock 
                             SET quantity=%s 
-                            WHERE product_id=%s
+                            WHERE CAST(product_id AS UNSIGNED) = %s
                         """, (
                             stock_qty - quantity,
-                            product_id
+                            pid
                         ))
 
                         db.commit()
@@ -430,9 +436,14 @@ def sales():
             print("SALES ERROR:", e)
             error = str(e)
 
-    cursor.execute("SELECT * FROM sales ORDER BY date DESC")
+    # load sales history
+    cursor.execute("""
+        SELECT * FROM sales 
+        ORDER BY date DESC
+    """)
     data = cursor.fetchall()
 
+    # load products for dropdown
     cursor.execute("SELECT * FROM stock")
     products = cursor.fetchall()
 
