@@ -1,47 +1,83 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Login</title>
+<title>Dairy Login</title>
+
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 
 <style>
 body {
     background: linear-gradient(135deg, #1e3c72, #2a5298);
     height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Segoe UI', sans-serif;
 }
 
 .login-card {
-    border-radius: 12px;
+    border-radius: 15px;
+    width: 360px;
+    background: white;
+    padding: 25px;
+}
+
+.login-title {
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 15px;
+}
+
+input {
+    border-radius: 8px !important;
+}
+
+.btn-primary {
+    border-radius: 8px;
+    font-weight: 500;
+}
+
+.register-link {
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.register-link:hover {
+    text-decoration: underline;
 }
 </style>
 </head>
 
-<body class="d-flex align-items-center justify-content-center">
+<body>
 
-<div class="card login-card shadow p-4" style="width:350px;">
+<div class="card login-card shadow-lg">
 
-<h4 class="text-center mb-3">🐄 Dairy Login</h4>
+<h4 class="login-title">🐄 Dairy Management</h4>
 
 {% if error %}
-<div class="alert alert-danger text-center">
+<div class="alert alert-danger text-center py-2">
     {{ error }}
 </div>
 {% endif %}
 
 <form method="POST">
 
-<label>Phone Number</label>
-<input type="text" name="phone" class="form-control mb-2" required>
+<div class="mb-3">
+<label class="form-label">Phone Number</label>
+<input type="text" name="phone" class="form-control" placeholder="Enter phone" required>
+</div>
 
-<label>Password</label>
-<input type="password" name="password" class="form-control mb-3" required>
+<div class="mb-3">
+<label class="form-label">Password</label>
+<input type="password" name="password" class="form-control" placeholder="Enter password" required>
+</div>
 
-<button class="btn btn-primary w-100">Login</button>
+<button class="btn btn-primary w-100 mt-2">Login</button>
 
 </form>
 
 <div class="text-center mt-3">
-<a href="/register">New user? Register</a>
+<a href="/register" class="register-link">Create new account</a>
 </div>
 
 </div>

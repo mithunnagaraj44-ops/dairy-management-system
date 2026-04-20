@@ -79,9 +79,9 @@ def login():
         user = cursor.fetchone()
 
         if user:
-            session['user'] = user['phone']
-            return redirect('/')
-    else:
+    session['user'] = user['phone']
+    return redirect('/')
+else:
     return render_template('login.html', error="Invalid phone or password")
 
     return render_template('login.html')
