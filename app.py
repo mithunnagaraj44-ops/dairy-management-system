@@ -98,6 +98,7 @@ def logout():
 # ================= DASHBOARD =================
 @app.route('/')
 def home():
+    ensure_user_column()
     if 'user' not in session:
         return redirect('/login')
 
@@ -181,6 +182,38 @@ def home():
         sales_data=sales_data,
         profit_data=profit_data
     )
+def ensure_user_column():
+    db = get_db()
+    if db is None:
+        return
+    cursor = db.cursor()
+
+    try:
+        cursor.execute("ALTER TABLE farmers ADD COLUMN user_phone VARCHAR(20)")
+    except:
+        pass
+
+    try:
+        cursor.execute("ALTER TABLE milk_collection ADD COLUMN user_phone VARCHAR(20)")
+    except:
+        pass
+
+    try:
+        cursor.execute("ALTER TABLE payments ADD COLUMN user_phone VARCHAR(20)")
+    except:
+        pass
+
+    try:
+        cursor.execute("ALTER TABLE sales ADD COLUMN user_phone VARCHAR(20)")
+    except:
+        pass
+
+    try:
+        cursor.execute("ALTER TABLE stock ADD COLUMN user_phone VARCHAR(20)")
+    except:
+        pass
+
+    db.commit()
 
 
 # ================= FARMERS =================
