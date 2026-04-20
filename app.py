@@ -109,7 +109,7 @@ def home():
     farmers = cursor.fetchone()['total']
 
     # Milk
-    cursor.execute("SELECT IFNULL(SUM(quantity),0) as total FROM milk")
+   cursor.execute("SELECT IFNULL(SUM(quantity),0) FROM milk_collection")
     milk = float(cursor.fetchone()['total'])
 
     # Payments
