@@ -412,18 +412,20 @@ def profit():
 
     cursor = db.cursor(dictionary=True)
 
+    # Total sales
     cursor.execute("SELECT IFNULL(SUM(total),0) as total FROM sales")
-    sales = float(cursor.fetchone()['total'])
+    sales = float(cursor.fetchone()['total'] or 0)
 
+    # ✅ Removed status filter (important fix)
     cursor.execute("""
         SELECT IFNULL(SUM(total_amount),0) as total
         FROM payments
-        WHERE status='Paid'
     """)
-    payments = float(cursor.fetchone()['total'])
+    payments = float(cursor.fetchone()['total'] or 0)
 
     net_profit = sales - payments
 
+    # Monthly sales
     cursor.execute("""
         SELECT MONTH(date) as m, IFNULL(SUM(total),0) as total
         FROM sales
@@ -431,25 +433,21 @@ def profit():
     """)
     sales_data = [0]*6
     for row in cursor.fetchall():
-        m = int(row['m'])
-        if m <= 6:
-            sales_data[m-1] = float(row['total'])
+        if row['m'] is not None and row['m'] <= 6:
+            sales_data[row['m']-1] = float(row['total'])
 
+    # Monthly payments
     cursor.execute("""
         SELECT MONTH(payment_date) as m, IFNULL(SUM(total_amount),0) as total
         FROM payments
-        WHERE status='Paid'
         GROUP BY MONTH(payment_date)
     """)
     payment_data = [0]*6
     for row in cursor.fetchall():
-        m = int(row['m'])
-        if m <= 6:
-            payment_data[m-1] = float(row['total'])
+        if row['m'] is not None and row['m'] <= 6:
+            payment_data[row['m']-1] = float(row['total'])
 
-    profit_data = []
-    for i in range(6):
-        profit_data.append(sales_data[i] - payment_data[i])
+    profit_data = [sales_data[i] - payment_data[i] for i in range(6)]
 
     return render_template(
         'profit.html',
@@ -495,15 +493,15 @@ def delete_farmer(id):
     return redirect('/farmers')
 
 
-@app.route('/delete_stock/<int:id>')
-def delete_stock(id):
+@app.route('/delete_stock/<string:product_id>')
+def delete_stock(product_id):
     db = get_db()
     if db is None:
         return "Database not connected"
 
     cursor = db.cursor()
 
-    cursor.execute("DELETE FROM stock WHERE id=%s", (id,))
+    cursor.execute("DELETE FROM stock WHERE product_id=%s", (product_id,))
     db.commit()
 
     return redirect('/stock')
@@ -535,33 +533,38 @@ def get_amount(farmer_id):
     return {"amount": round(max(amount, 0), 2)}
 
 
-@app.route('/edit_stock/<int:id>', methods=['GET','POST'])
-def edit_stock(id):
+@app.route('/edit_stock/<string:product_id>', methods=['GET','POST'])
+def edit_stock(product_id):
     db = get_db()
     if db is None:
         return "Database not connected"
 
     cursor = db.cursor(dictionary=True)
 
-    cursor.execute("SELECT * FROM stock WHERE id=%s", (id,))
+    cursor.execute("SELECT * FROM stock WHERE product_id=%s", (product_id,))
     data = cursor.fetchone()
 
     if not data:
         return "Product not found"
 
     if request.method == 'POST':
-        product_name = request.form.get('product_name')
-        price = float(request.form.get('price') or 0)
-        quantity = float(request.form.get('quantity') or 0)
+        try:
+            product_name = request.form.get('product_name')
+            price = float(request.form.get('price') or 0)
+            quantity = float(request.form.get('quantity') or 0)
 
-        cursor.execute("""
-            UPDATE stock
-            SET product_name=%s, price=%s, quantity=%s
-            WHERE id=%s
-        """, (product_name, price, quantity, id))
+            cursor.execute("""
+                UPDATE stock
+                SET product_name=%s, price=%s, quantity=%s
+                WHERE product_id=%s
+            """, (product_name, price, quantity, product_id))
 
-        db.commit()
-        return redirect('/stock')
+            db.commit()
+            return redirect('/stock')
+
+        except Exception as e:
+            print("EDIT STOCK ERROR:", e)
+            return "Error updating stock"
 
     return render_template('edit_stock.html', data=data)
 

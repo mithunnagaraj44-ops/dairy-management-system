@@ -46,7 +46,6 @@
 <table class="table mt-3 table-bordered table-striped">
 <thead>
 <tr>
-<th>ID</th>
 <th>Product ID</th>
 <th>Product</th>
 <th>Price</th>
@@ -59,7 +58,6 @@
 <tbody>
 {% for row in data %}
 <tr>
-<td>{{ row.id }}</td>
 <td>{{ row.product_id }}</td>
 <td>{{ row.product_name }}</td>
 <td>{{ row.price }}</td>
@@ -67,15 +65,15 @@
 <td>{{ row.last_updated }}</td>
 
 <td>
-<a href="/edit_stock/{{ row.id }}" class="btn btn-warning btn-sm">Edit</a>
-<a href="/delete_stock/{{ row.id }}" class="btn btn-danger btn-sm"
+<a href="/edit_stock/{{ row.product_id }}" class="btn btn-warning btn-sm">Edit</a>
+<a href="/delete_stock/{{ row.product_id }}" class="btn btn-danger btn-sm"
    onclick="return confirm('Delete this product?')">Delete</a>
 </td>
 
 </tr>
 {% else %}
 <tr>
-<td colspan="7" class="text-center">No stock data available</td>
+<td colspan="6" class="text-center">No stock data available</td>
 </tr>
 {% endfor %}
 </tbody>
