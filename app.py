@@ -98,7 +98,7 @@ def logout():
 # ================= DASHBOARD =================
 @app.route('/')
 def home():
-    ensure_user_column()
+   
     if 'user' not in session:
         return redirect('/login')
 
@@ -107,38 +107,21 @@ def home():
         return "Database not connected"
 
     cursor = db.cursor(dictionary=True)
-    user = session.get('user')
 
     # ================= FARMERS =================
-    cursor.execute("""
-        SELECT COUNT(*) as total 
-        FROM farmers 
-        WHERE user_phone=%s
-    """, (user,))
+    cursor.execute("SELECT COUNT(*) as total FROM farmers")
     farmers = cursor.fetchone()['total']
 
     # ================= MILK =================
-    cursor.execute("""
-        SELECT IFNULL(SUM(qty),0) as total 
-        FROM milk_collection 
-        WHERE user_phone=%s
-    """, (user,))
+    cursor.execute("SELECT IFNULL(SUM(qty),0) as total FROM milk_collection")
     milk = float(cursor.fetchone()['total'])
 
     # ================= PAYMENTS =================
-    cursor.execute("""
-        SELECT IFNULL(SUM(total_amount),0) as total 
-        FROM payments 
-        WHERE user_phone=%s
-    """, (user,))
+    cursor.execute("SELECT IFNULL(SUM(total_amount),0) as total FROM payments")
     payments = float(cursor.fetchone()['total'])
 
     # ================= SALES =================
-    cursor.execute("""
-        SELECT IFNULL(SUM(total),0) as total 
-        FROM sales 
-        WHERE user_phone=%s
-    """, (user,))
+    cursor.execute("SELECT IFNULL(SUM(total),0) as total FROM sales")
     sales = float(cursor.fetchone()['total'])
 
     profit = sales - payments
@@ -147,9 +130,8 @@ def home():
     cursor.execute("""
         SELECT MONTH(date) as m, IFNULL(SUM(total),0) as total
         FROM sales
-        WHERE user_phone=%s
         GROUP BY MONTH(date)
-    """, (user,))
+    """)
     
     sales_data = [0]*6
     for row in cursor.fetchall():
@@ -160,9 +142,8 @@ def home():
     cursor.execute("""
         SELECT MONTH(payment_date) as m, IFNULL(SUM(total_amount),0) as total
         FROM payments
-        WHERE user_phone=%s
         GROUP BY MONTH(payment_date)
-    """, (user,))
+    """)
     
     payment_data = [0]*6
     for row in cursor.fetchall():
@@ -182,38 +163,6 @@ def home():
         sales_data=sales_data,
         profit_data=profit_data
     )
-def ensure_user_column():
-    db = get_db()
-    if db is None:
-        return
-    cursor = db.cursor()
-
-    try:
-        cursor.execute("ALTER TABLE farmers ADD COLUMN user_phone VARCHAR(20)")
-    except:
-        pass
-
-    try:
-        cursor.execute("ALTER TABLE milk_collection ADD COLUMN user_phone VARCHAR(20)")
-    except:
-        pass
-
-    try:
-        cursor.execute("ALTER TABLE payments ADD COLUMN user_phone VARCHAR(20)")
-    except:
-        pass
-
-    try:
-        cursor.execute("ALTER TABLE sales ADD COLUMN user_phone VARCHAR(20)")
-    except:
-        pass
-
-    try:
-        cursor.execute("ALTER TABLE stock ADD COLUMN user_phone VARCHAR(20)")
-    except:
-        pass
-
-    db.commit()
 
 
 # ================= FARMERS =================
@@ -224,17 +173,13 @@ def farmers():
         return "Database not connected"
 
     cursor = db.cursor(dictionary=True)
-    user = session.get('user')
 
     if request.method == 'POST':
         name = request.form['name']
         phone = request.form['phone']
 
-        # ✅ ONLY GET THIS USER'S FARMER CODES
-        cursor.execute("""
-            SELECT farmer_code FROM farmers 
-            WHERE user_phone=%s
-        """, (user,))
+        # GET ALL FARMER CODES (no user filter)
+        cursor.execute("SELECT farmer_code FROM farmers")
         codes = cursor.fetchall()
 
         used = sorted([
@@ -252,24 +197,19 @@ def farmers():
 
         farmer_code = f"F{new_num}"
 
-        # ✅ INSERT WITH USER
+        # INSERT (removed user_phone)
         cursor.execute("""
-            INSERT INTO farmers (farmer_code, name, phone, status, user_phone)
-            VALUES (%s,%s,%s,'Active',%s)
-        """, (farmer_code, name, phone, user))
+            INSERT INTO farmers (farmer_code, name, phone, status)
+            VALUES (%s,%s,%s,'Active')
+        """, (farmer_code, name, phone))
 
         db.commit()
 
-    # ✅ LOAD ONLY THIS USER'S FARMERS
-    cursor.execute("""
-        SELECT * FROM farmers 
-        WHERE user_phone=%s
-        ORDER BY f_id
-    """, (user,))
+    # LOAD ALL FARMERS
+    cursor.execute("SELECT * FROM farmers ORDER BY f_id")
     data = cursor.fetchall()
 
     return render_template('farmers.html', farmers=data)
-
 
 # ================= MILK =================
 @app.route('/milk', methods=['GET','POST'])
@@ -279,7 +219,6 @@ def milk():
         return "Database not connected"
 
     cursor = db.cursor(dictionary=True)
-    user = session.get('user')
 
     if request.method == 'POST':
         farmer_id = request.form['farmer']
@@ -292,30 +231,26 @@ def milk():
         rate = 25 + (fat * 7)
         amount = qty * rate
 
-        # ✅ INSERT WITH USER
+        # INSERT WITHOUT user_phone
         cursor.execute("""
             INSERT INTO milk_collection
-            (farmer_id, qty, fat, session, date, time, amount, user_phone)
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
-        """, (farmer_id, qty, fat, session_type, date, time, amount, user))
+            (farmer_id, qty, fat, session, date, time, amount)
+            VALUES (%s,%s,%s,%s,%s,%s,%s)
+        """, (farmer_id, qty, fat, session_type, date, time, amount))
 
         db.commit()
 
-    # ✅ LOAD ONLY THIS USER'S DATA
+    # LOAD ALL DATA
     cursor.execute("""
         SELECT m.*, f.name
         FROM milk_collection m
         JOIN farmers f ON m.farmer_id = f.f_id
-        WHERE m.user_phone=%s
         ORDER BY m.id DESC
-    """, (user,))
+    """)
     data = cursor.fetchall()
 
-    # ✅ LOAD ONLY THIS USER'S FARMERS
-    cursor.execute("""
-        SELECT * FROM farmers 
-        WHERE user_phone=%s
-    """, (user,))
+    # LOAD ALL FARMERS
+    cursor.execute("SELECT * FROM farmers")
     farmers = cursor.fetchall()
 
     return render_template('milk.html', data=data, farmers=farmers)
@@ -328,7 +263,6 @@ def payments():
         return "Database not connected"
 
     cursor = db.cursor(dictionary=True)
-    user = session.get('user')
 
     # ================= INSERT =================
     if request.method == 'POST':
@@ -336,12 +270,12 @@ def payments():
         amount = float(request.form['amount'])
         status = request.form['status']
 
-        # ✅ INSERT WITH USER
+        # INSERT WITHOUT user_phone
         cursor.execute("""
             INSERT INTO payments 
-            (farmer_id, total_amount, status, payment_date, user_phone)
-            VALUES (%s,%s,%s,CURDATE(),%s)
-        """, (farmer_id, amount, status, user))
+            (farmer_id, total_amount, status, payment_date)
+            VALUES (%s,%s,%s,CURDATE())
+        """, (farmer_id, amount, status))
 
         db.commit()
 
@@ -355,8 +289,7 @@ def payments():
             IFNULL((
                 SELECT SUM(m.amount)
                 FROM milk_collection m
-                WHERE m.farmer_id = f.f_id 
-                AND m.user_phone=%s
+                WHERE m.farmer_id = f.f_id
             ), 0) AS total_milk,
 
             IFNULL((
@@ -364,19 +297,16 @@ def payments():
                 FROM payments p
                 WHERE p.farmer_id = f.f_id 
                 AND p.status='Paid'
-                AND p.user_phone=%s
             ), 0) AS paid,
 
             (
                 SELECT MAX(p2.payment_date)
                 FROM payments p2
                 WHERE p2.farmer_id = f.f_id
-                AND p2.user_phone=%s
             ) AS payment_date
 
         FROM farmers f
-        WHERE f.user_phone=%s
-    """, (user, user, user, user))
+    """)
 
     data = cursor.fetchall()
 
@@ -388,10 +318,7 @@ def payments():
         row['total_amount'] = round(max(pending, 0), 2)
 
     # ================= FARMERS DROPDOWN =================
-    cursor.execute("""
-        SELECT * FROM farmers 
-        WHERE user_phone=%s
-    """, (user,))
+    cursor.execute("SELECT * FROM farmers")
     farmers = cursor.fetchall()
 
     return render_template('payments.html', data=data, farmers=farmers)
@@ -404,7 +331,6 @@ def stock():
         return "Database not connected"
 
     cursor = db.cursor(dictionary=True)
-    user = session.get('user')
 
     if request.method == 'POST':
         try:
@@ -413,12 +339,12 @@ def stock():
             price = float(request.form.get('price') or 0)
             quantity = float(request.form.get('quantity') or 0)
 
-            # ✅ INSERT WITH USER
+            # INSERT WITHOUT user_phone
             cursor.execute("""
                 INSERT INTO stock 
-                (product_id, product_name, price, quantity, last_updated, user_phone)
-                VALUES (%s,%s,%s,%s,CURDATE(),%s)
-            """, (product_id, product_name, price, quantity, user))
+                (product_id, product_name, price, quantity, last_updated)
+                VALUES (%s,%s,%s,%s,CURDATE())
+            """, (product_id, product_name, price, quantity))
 
             db.commit()
 
@@ -426,12 +352,11 @@ def stock():
             print("STOCK ERROR:", e)
             return "Error adding stock"
 
-    # ✅ LOAD ONLY USER DATA
+    # LOAD ALL STOCK
     cursor.execute("""
         SELECT * FROM stock 
-        WHERE user_phone=%s
         ORDER BY last_updated DESC
-    """, (user,))
+    """)
     data = cursor.fetchall()
 
     return render_template('stock.html', data=data)
@@ -445,7 +370,6 @@ def sales():
         return "Database not connected"
 
     cursor = db.cursor(dictionary=True)
-    user = session.get('user')
 
     error = None
     success = None
@@ -459,11 +383,11 @@ def sales():
                 error = "Invalid input"
 
             else:
-                # ✅ GET PRODUCT (USER FILTER)
+                # GET PRODUCT (NO USER FILTER)
                 cursor.execute("""
                     SELECT * FROM stock 
-                    WHERE product_id=%s AND user_phone=%s
-                """, (product_id, user))
+                    WHERE product_id=%s
+                """, (product_id,))
                 product = cursor.fetchone()
 
                 if not product:
@@ -475,29 +399,27 @@ def sales():
                 else:
                     total = float(product['price']) * quantity
 
-                    # ✅ INSERT SALE (WITH USER)
+                    # INSERT SALE
                     cursor.execute("""
                         INSERT INTO sales
-                        (product_id, product_name, price, quantity, total, date, user_phone)
-                        VALUES (%s,%s,%s,%s,%s,CURDATE(),%s)
+                        (product_id, product_name, price, quantity, total, date)
+                        VALUES (%s,%s,%s,%s,%s,CURDATE())
                     """, (
                         product_id,
                         product['product_name'],
                         product['price'],
                         quantity,
-                        total,
-                        user
+                        total
                     ))
 
-                    # ✅ UPDATE STOCK (USER FILTER)
+                    # UPDATE STOCK
                     cursor.execute("""
                         UPDATE stock 
                         SET quantity=%s 
-                        WHERE product_id=%s AND user_phone=%s
+                        WHERE product_id=%s
                     """, (
                         float(product['quantity']) - quantity,
-                        product_id,
-                        user
+                        product_id
                     ))
 
                     db.commit()
@@ -507,19 +429,15 @@ def sales():
             print("SALES ERROR:", e)
             error = "Something went wrong"
 
-    # ✅ LOAD SALES (USER ONLY)
+    # LOAD SALES
     cursor.execute("""
         SELECT * FROM sales 
-        WHERE user_phone=%s 
         ORDER BY id DESC
-    """, (user,))
+    """)
     data = cursor.fetchall()
 
-    # ✅ LOAD PRODUCTS (USER ONLY)
-    cursor.execute("""
-        SELECT * FROM stock 
-        WHERE user_phone=%s
-    """, (user,))
+    # LOAD PRODUCTS
+    cursor.execute("SELECT * FROM stock")
     products = cursor.fetchall()
 
     return render_template(
@@ -536,9 +454,8 @@ def history():
     db = get_db()
     if db is None:
         return "Database not connected"
-    cursor = db.cursor(dictionary=True)
 
-    user = session.get('user')
+    cursor = db.cursor(dictionary=True)
 
     selected_date = request.form.get('date')
 
@@ -550,9 +467,9 @@ def history():
         SELECT m.id, f.name, m.qty, m.fat, m.amount, m.time
         FROM milk_collection m
         JOIN farmers f ON m.farmer_id = f.f_id
-        WHERE DATE(m.date)=%s AND m.user_phone=%s
+        WHERE DATE(m.date)=%s
         ORDER BY m.time ASC
-    """, (selected_date, user))
+    """, (selected_date,))
 
     data = cursor.fetchall()
 
@@ -567,22 +484,13 @@ def profit():
         return "Database not connected"
 
     cursor = db.cursor(dictionary=True)
-    user = session.get('user')
 
     # Total sales
-    cursor.execute("""
-        SELECT IFNULL(SUM(total),0) as total 
-        FROM sales 
-        WHERE user_phone=%s
-    """, (user,))
+    cursor.execute("SELECT IFNULL(SUM(total),0) as total FROM sales")
     sales = float(cursor.fetchone()['total'] or 0)
 
     # Total payments
-    cursor.execute("""
-        SELECT IFNULL(SUM(total_amount),0) as total
-        FROM payments
-        WHERE user_phone=%s
-    """, (user,))
+    cursor.execute("SELECT IFNULL(SUM(total_amount),0) as total FROM payments")
     payments = float(cursor.fetchone()['total'] or 0)
 
     net_profit = sales - payments
@@ -591,24 +499,22 @@ def profit():
     cursor.execute("""
         SELECT MONTH(date) as m, IFNULL(SUM(total),0) as total
         FROM sales
-        WHERE user_phone=%s
         GROUP BY MONTH(date)
-    """, (user,))
+    """)
     sales_data = [0]*6
     for row in cursor.fetchall():
-        if row['m'] is not None and row['m'] <= 6:
+        if row['m'] and 1 <= row['m'] <= 6:
             sales_data[row['m']-1] = float(row['total'])
 
     # Monthly payments
     cursor.execute("""
         SELECT MONTH(payment_date) as m, IFNULL(SUM(total_amount),0) as total
         FROM payments
-        WHERE user_phone=%s
         GROUP BY MONTH(payment_date)
-    """, (user,))
+    """)
     payment_data = [0]*6
     for row in cursor.fetchall():
-        if row['m'] is not None and row['m'] <= 6:
+        if row['m'] and 1 <= row['m'] <= 6:
             payment_data[row['m']-1] = float(row['total'])
 
     profit_data = [sales_data[i] - payment_data[i] for i in range(6)]
@@ -627,23 +533,19 @@ def edit_farmer(id):
     db = get_db()
     if db is None:
         return "Database not connected"
-    cursor = db.cursor(dictionary=True)
 
-    user = session.get('user')
+    cursor = db.cursor(dictionary=True)
 
     if request.method == 'POST':
         cursor.execute("""
             UPDATE farmers 
             SET name=%s, phone=%s 
-            WHERE f_id=%s AND user_phone=%s
-        """, (request.form['name'], request.form['phone'], id, user))
+            WHERE f_id=%s
+        """, (request.form['name'], request.form['phone'], id))
         db.commit()
         return redirect('/farmers')
 
-    cursor.execute("""
-        SELECT * FROM farmers 
-        WHERE f_id=%s AND user_phone=%s
-    """, (id, user))
+    cursor.execute("SELECT * FROM farmers WHERE f_id=%s", (id,))
     farmer = cursor.fetchone()
 
     return render_template('edit_farmer.html', farmer=farmer)
@@ -654,24 +556,12 @@ def delete_farmer(id):
     db = get_db()
     if db is None:
         return "Database not connected"
+
     cursor = db.cursor()
 
-    user = session.get('user')
-
-    cursor.execute("""
-        DELETE FROM milk_collection 
-        WHERE farmer_id=%s AND user_phone=%s
-    """, (id, user))
-
-    cursor.execute("""
-        DELETE FROM payments 
-        WHERE farmer_id=%s AND user_phone=%s
-    """, (id, user))
-
-    cursor.execute("""
-        DELETE FROM farmers 
-        WHERE f_id=%s AND user_phone=%s
-    """, (id, user))
+    cursor.execute("DELETE FROM milk_collection WHERE farmer_id=%s", (id,))
+    cursor.execute("DELETE FROM payments WHERE farmer_id=%s", (id,))
+    cursor.execute("DELETE FROM farmers WHERE f_id=%s", (id,))
 
     db.commit()
     return redirect('/farmers')
@@ -681,12 +571,8 @@ def delete_farmer(id):
 def delete_stock(product_id):
     db = get_db()
     cursor = db.cursor()
-    user = session.get('user')
 
-    cursor.execute("""
-        DELETE FROM stock 
-        WHERE product_id=%s AND user_phone=%s
-    """, (product_id, user))
+    cursor.execute("DELETE FROM stock WHERE product_id=%s", (product_id,))
 
     db.commit()
     return redirect('/stock')
@@ -697,22 +583,21 @@ def get_amount(farmer_id):
     db = get_db()
     if db is None:
         return {"amount": 0}
-    cursor = db.cursor(dictionary=True)
 
-    user = session.get('user')
+    cursor = db.cursor(dictionary=True)
 
     cursor.execute("""
         SELECT IFNULL(SUM(amount),0) as total
         FROM milk_collection
-        WHERE farmer_id=%s AND user_phone=%s
-    """, (farmer_id, user))
+        WHERE farmer_id=%s
+    """, (farmer_id,))
     total = cursor.fetchone()['total']
 
     cursor.execute("""
         SELECT IFNULL(SUM(total_amount),0) as paid
         FROM payments
-        WHERE farmer_id=%s AND status='Paid' AND user_phone=%s
-    """, (farmer_id, user))
+        WHERE farmer_id=%s AND status='Paid'
+    """, (farmer_id,))
     paid = cursor.fetchone()['paid']
 
     amount = float(total) - float(paid)
@@ -724,12 +609,11 @@ def get_amount(farmer_id):
 def edit_stock(product_id):
     db = get_db()
     cursor = db.cursor(dictionary=True)
-    user = session.get('user')
 
     cursor.execute("""
         SELECT * FROM stock 
-        WHERE product_id=%s AND user_phone=%s
-    """, (product_id, user))
+        WHERE product_id=%s
+    """, (product_id,))
     data = cursor.fetchone()
 
     if not data:
@@ -743,8 +627,8 @@ def edit_stock(product_id):
         cursor.execute("""
             UPDATE stock
             SET product_name=%s, price=%s, quantity=%s
-            WHERE product_id=%s AND user_phone=%s
-        """, (product_name, price, quantity, product_id, user))
+            WHERE product_id=%s
+        """, (product_name, price, quantity, product_id))
 
         db.commit()
         return redirect('/stock')
