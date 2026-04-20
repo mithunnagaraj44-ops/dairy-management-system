@@ -42,28 +42,34 @@
     <div class="card card-box p-3 h-100">
         <h6 class="mb-2">📈 Sales & Profit Trend</h6>
 
-        <div style="position:relative; height:240px;">
-            <canvas id="chart"></canvas>
-        </div>
+```
+    <div style="position:relative; height:240px;">
+        <canvas id="chart"></canvas>
     </div>
+</div>
+```
+
 </div>
 
 <div class="col-md-4">
     <div class="card card-box p-4 text-center h-100 d-flex flex-column justify-content-center">
 
-        <h5>💰 Net Profit</h5>
+```
+    <h5>💰 Net Profit</h5>
 
-        <h1 class="{% if profit > 0 %}text-success{% else %}text-danger{% endif %}">
-            ₹ {{ profit }}
-        </h1>
+    <h1 class="{% if profit > 0 %}text-success{% else %}text-danger{% endif %}">
+        ₹ {{ profit }}
+    </h1>
 
-        {% if profit > 0 %}
-            <p class="text-success">Profit 👍</p>
-        {% else %}
-            <p class="text-danger">Loss ⚠️</p>
-        {% endif %}
+    {% if profit > 0 %}
+        <p class="text-success">Profit 👍</p>
+    {% else %}
+        <p class="text-danger">Loss ⚠️</p>
+    {% endif %}
 
-    </div>
+</div>
+```
+
 </div>
 
 </div>
@@ -95,18 +101,21 @@ new Chart(ctx, {
             }
         ]
     },
-  options: {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-        legend: {
-            position: 'top'
-        }
-    },
-    scales: {
-        y: {
-            beginAtZero: true
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'top'
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true
+            }
         }
     }
-}
 });
+</script>
+
+{% endblock %}

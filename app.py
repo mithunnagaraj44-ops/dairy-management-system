@@ -1,12 +1,12 @@
 from flask import Flask, render_template, request, redirect, session, jsonify
 import mysql.connector
-from mysql.connector import Error
 import os
 
 app = Flask(__name__)
 app.secret_key = "secret123"
 
 
+# ================= DATABASE =================
 def get_db():
     try:
         return mysql.connector.connect(
@@ -14,13 +14,15 @@ def get_db():
             user=os.getenv("MYSQLUSER"),
             password=os.getenv("MYSQLPASSWORD"),
             database=os.getenv("MYSQLDATABASE"),
-            port=int(os.getenv("MYSQLPORT") or 3306)
+            port=int(os.getenv("MYSQLPORT") or 3306),
+            connection_timeout=10
         )
     except Exception as e:
         print("DB ERROR:", e)
         return None
 
 
+# ================= LOGIN CHECK =================
 @app.before_request
 def check_login():
     if request.endpoint not in ['login', 'register', 'static']:
@@ -34,6 +36,7 @@ def register():
     db = get_db()
     if db is None:
         return "Database not connected"
+
     cursor = db.cursor(dictionary=True)
 
     if request.method == 'POST':
@@ -44,9 +47,7 @@ def register():
             return "Missing data"
 
         cursor.execute("SELECT * FROM manager WHERE phone=%s", (phone,))
-        existing = cursor.fetchone()
-
-        if existing:
+        if cursor.fetchone():
             return "User already exists"
 
         cursor.execute(
@@ -55,9 +56,9 @@ def register():
         )
         db.commit()
 
-        return redirect('/login')
-
-    return render_template('register.html')
+    cursor.close()
+    db.close()
+    return redirect('/login') if request.method == 'POST' else render_template('register.html')
 
 
 # ================= LOGIN =================
@@ -79,12 +80,17 @@ def login():
         )
         user = cursor.fetchone()
 
+        cursor.close()
+        db.close()
+
         if user:
             session['user'] = user['phone']
             return redirect('/')
         else:
             return render_template('login.html', error="Invalid phone or password")
 
+    cursor.close()
+    db.close()
     return render_template('login.html')
 
 
@@ -98,64 +104,48 @@ def logout():
 # ================= DASHBOARD =================
 @app.route('/')
 def home():
-   
-    if 'user' not in session:
-        return redirect('/login')
-
     db = get_db()
     if db is None:
         return "Database not connected"
 
     cursor = db.cursor(dictionary=True)
 
-    # ================= FARMERS =================
     cursor.execute("SELECT COUNT(*) as total FROM farmers")
-    res = cursor.fetchone()
-    farmers = res['total'] if res and res['total'] else 0
+    farmers = cursor.fetchone()['total'] or 0
 
-    # ================= MILK =================
     cursor.execute("SELECT IFNULL(SUM(qty),0) as total FROM milk_collection")
-    res = cursor.fetchone()
-    milk = float(res['total'] if res and res['total'] else 0)
+    milk = float(cursor.fetchone()['total'] or 0)
 
-    # ================= PAYMENTS =================
     cursor.execute("SELECT IFNULL(SUM(total_amount),0) as total FROM payments")
-    res = cursor.fetchone()
-    payments = float(res['total'] if res and res['total'] else 0)
+    payments = float(cursor.fetchone()['total'] or 0)
 
-    # ================= SALES =================
     cursor.execute("SELECT IFNULL(SUM(total),0) as total FROM sales")
-    res = cursor.fetchone()
-    sales = float(res['total'] if res and res['total'] else 0)
+    sales = float(cursor.fetchone()['total'] or 0)
 
     profit = sales - payments
 
-    # ================= MONTHLY SALES =================
     cursor.execute("""
         SELECT MONTH(date) as m, IFNULL(SUM(total),0) as total
-        FROM sales
-        GROUP BY MONTH(date)
+        FROM sales GROUP BY MONTH(date)
     """)
-    
     sales_data = [0]*6
     for row in cursor.fetchall():
         if row['m'] and 1 <= row['m'] <= 6:
             sales_data[row['m']-1] = float(row['total'])
 
-    # ================= MONTHLY PAYMENTS =================
     cursor.execute("""
         SELECT MONTH(payment_date) as m, IFNULL(SUM(total_amount),0) as total
-        FROM payments
-        GROUP BY MONTH(payment_date)
+        FROM payments GROUP BY MONTH(payment_date)
     """)
-    
     payment_data = [0]*6
     for row in cursor.fetchall():
         if row['m'] and 1 <= row['m'] <= 6:
             payment_data[row['m']-1] = float(row['total'])
 
-    # ================= PROFIT =================
     profit_data = [sales_data[i] - payment_data[i] for i in range(6)]
+
+    cursor.close()
+    db.close()
 
     return render_template(
         'index.html',
@@ -167,7 +157,6 @@ def home():
         sales_data=sales_data,
         profit_data=profit_data
     )
-
 
 # ================= FARMERS =================
 @app.route('/farmers', methods=['GET','POST'])
@@ -212,6 +201,8 @@ def farmers():
     # LOAD ALL FARMERS
     cursor.execute("SELECT * FROM farmers ORDER BY f_id")
     data = cursor.fetchall()
+    cursor.close()
+    db.close()
 
     return render_template('farmers.html', farmers=data)
 
@@ -256,6 +247,8 @@ def milk():
     # LOAD ALL FARMERS
     cursor.execute("SELECT * FROM farmers")
     farmers = cursor.fetchall()
+    cursor.close()
+    db.close()
 
     return render_template('milk.html', data=data, farmers=farmers)
 
@@ -324,6 +317,8 @@ def payments():
     # ================= FARMERS DROPDOWN =================
     cursor.execute("SELECT * FROM farmers")
     farmers = cursor.fetchall()
+    cursor.close()
+    db.close()
 
     return render_template('payments.html', data=data, farmers=farmers)
 
@@ -362,6 +357,8 @@ def stock():
         ORDER BY last_updated DESC
     """)
     data = cursor.fetchall()
+    cursor.close()
+    db.close()
 
     return render_template('stock.html', data=data)
 
@@ -385,46 +382,26 @@ def sales():
 
             if not product_id or quantity <= 0:
                 error = "Invalid input"
-
             else:
-                # GET PRODUCT (NO USER FILTER)
-                cursor.execute("""
-                    SELECT * FROM stock 
-                    WHERE product_id=%s
-                """, (product_id,))
+                cursor.execute("SELECT * FROM stock WHERE product_id=%s", (product_id,))
                 product = cursor.fetchone()
 
                 if not product:
                     error = "Product not found"
-
                 elif quantity > float(product['quantity']):
                     error = f"Only {product['quantity']} items available!"
-
                 else:
                     total = float(product['price']) * quantity
 
-                    # INSERT SALE
-                    cursor.execute("""
-                        INSERT INTO sales
-                        (product_id, product_name, price, quantity, total, date)
-                        VALUES (%s,%s,%s,%s,%s,CURDATE())
-                    """, (
-                        product_id,
-                        product['product_name'],
-                        product['price'],
-                        quantity,
-                        total
-                    ))
+                    cursor.execute(
+                        "INSERT INTO sales (product_id, product_name, price, quantity, total, date) VALUES (%s,%s,%s,%s,%s,CURDATE())",
+                        (product_id, product['product_name'], product['price'], quantity, total)
+                    )
 
-                    # UPDATE STOCK
-                    cursor.execute("""
-                        UPDATE stock 
-                        SET quantity=%s 
-                        WHERE product_id=%s
-                    """, (
-                        float(product['quantity']) - quantity,
-                        product_id
-                    ))
+                    cursor.execute(
+                        "UPDATE stock SET quantity=%s WHERE product_id=%s",
+                        (float(product['quantity']) - quantity, product_id)
+                    )
 
                     db.commit()
                     success = "Sale completed successfully!"
@@ -433,24 +410,17 @@ def sales():
             print("SALES ERROR:", e)
             error = "Something went wrong"
 
-    # LOAD SALES
-    cursor.execute("""
-        SELECT * FROM sales 
-        ORDER BY id DESC
-    """)
+    cursor.execute("SELECT * FROM sales ORDER BY id DESC")
     data = cursor.fetchall()
 
-    # LOAD PRODUCTS
     cursor.execute("SELECT * FROM stock")
     products = cursor.fetchall()
 
-    return render_template(
-        'sales.html',
-        data=data,
-        products=products,
-        error=error,
-        success=success
-    )
+    cursor.close()
+    db.close()
+
+    return render_template('sales.html', data=data, products=products, error=error, success=success)
+
 
 # ================= HISTORY =================
 @app.route('/history', methods=['GET','POST'])
@@ -476,6 +446,8 @@ def history():
     """, (selected_date,))
 
     data = cursor.fetchall()
+    cursor.close()
+    db.close()
 
     return render_template('history.html', data=data, selected_date=selected_date)
 
@@ -525,6 +497,8 @@ def profit():
 
     # ================= PROFIT =================
     profit_data = [sales_data[i] - payment_data[i] for i in range(6)]
+    cursor.close()
+    db.close()
 
     return render_template(
         'profit.html',
@@ -534,6 +508,7 @@ def profit():
         sales_data=sales_data,
         profit_data=profit_data
     )
+
 
 @app.route('/edit/<int:id>', methods=['GET','POST'])
 def edit_farmer(id):
@@ -554,6 +529,9 @@ def edit_farmer(id):
 
     cursor.execute("SELECT * FROM farmers WHERE f_id=%s", (id,))
     farmer = cursor.fetchone()
+    cursor.close()
+    db.close()
+
 
     return render_template('edit_farmer.html', farmer=farmer)
 
@@ -571,7 +549,11 @@ def delete_farmer(id):
     cursor.execute("DELETE FROM farmers WHERE f_id=%s", (id,))
 
     db.commit()
+    cursor.close()
+    db.close()
     return redirect('/farmers')
+
+
 
 
 @app.route('/delete_stock/<string:product_id>')
@@ -582,6 +564,8 @@ def delete_stock(product_id):
     cursor.execute("DELETE FROM stock WHERE product_id=%s", (product_id,))
 
     db.commit()
+    cursor.close()
+    db.close()
     return redirect('/stock')
 
 
@@ -593,32 +577,23 @@ def get_amount(farmer_id):
 
     cursor = db.cursor(dictionary=True)
 
-    # ===== TOTAL MILK =====
-    cursor.execute("""
-        SELECT IFNULL(SUM(amount),0) as total
-        FROM milk_collection
-        WHERE farmer_id=%s
-    """, (farmer_id,))
-    res1 = cursor.fetchone()
-    total = res1['total'] if res1 and res1['total'] else 0
+    cursor.execute("SELECT IFNULL(SUM(amount),0) as total FROM milk_collection WHERE farmer_id=%s", (farmer_id,))
+    total = cursor.fetchone()['total'] or 0
 
-    # ===== TOTAL PAID =====
-    cursor.execute("""
-        SELECT IFNULL(SUM(total_amount),0) as paid
-        FROM payments
-        WHERE farmer_id=%s AND status='Paid'
-    """, (farmer_id,))
-    res2 = cursor.fetchone()
-    paid = res2['paid'] if res2 and res2['paid'] else 0
+    cursor.execute("SELECT IFNULL(SUM(total_amount),0) as paid FROM payments WHERE farmer_id=%s AND status='Paid'", (farmer_id,))
+    paid = cursor.fetchone()['paid'] or 0
 
-    amount = float(total) - float(paid)
+    cursor.close()
+    db.close()
 
-    return {"amount": round(max(amount, 0), 2)}
+    return {"amount": round(max(float(total) - float(paid), 0), 2)}
 
 
 @app.route('/edit_stock/<string:product_id>', methods=['GET','POST'])
 def edit_stock(product_id):
     db = get_db()
+    if db is None:
+        return "Database not connected"
     cursor = db.cursor(dictionary=True)
 
     cursor.execute("""
@@ -643,8 +618,11 @@ def edit_stock(product_id):
 
         db.commit()
         return redirect('/stock')
+    cursor.close()
+    db.close()
 
     return render_template('edit_stock.html', data=data)
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)
