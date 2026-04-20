@@ -1,38 +1,92 @@
-@app.route('/stock', methods=['GET','POST'])
-def stock():
-    db = get_db()
-    if db is None:
-        return "Database not connected"
+{% extends 'base.html' %}
+{% block content %}
 
-    cursor = db.cursor(dictionary=True)
-    user = session.get('user')
+<div class="container-fluid p-4">
 
-    if request.method == 'POST':
-        try:
-            product_id = request.form.get('product_id')
-            product_name = request.form.get('product_name')
-            price = float(request.form.get('price') or 0)
-            quantity = float(request.form.get('quantity') or 0)
+<h2 class="fw-bold">📦 Inventory Management</h2>
 
-            # ✅ INSERT WITH USER
-            cursor.execute("""
-                INSERT INTO stock 
-                (product_id, product_name, price, quantity, last_updated, user_phone)
-                VALUES (%s,%s,%s,%s,CURDATE(),%s)
-            """, (product_id, product_name, price, quantity, user))
+<!-- ADD STOCK -->
 
-            db.commit()
+<div class="card p-4 mt-3 shadow-sm">
+<form method="POST">
+<div class="row g-3">
 
-        except Exception as e:
-            print("STOCK ERROR:", e)
-            return "Error adding stock"
+<div class="col-md-2">
+<label class="form-label">Product ID</label>
+<input type="text" name="product_id" class="form-control" required>
+</div>
 
-    # ✅ LOAD ONLY USER DATA
-    cursor.execute("""
-        SELECT * FROM stock 
-        WHERE user_phone=%s
-        ORDER BY last_updated DESC
-    """, (user,))
-    data = cursor.fetchall()
+<div class="col-md-3">
+<label class="form-label">Product Name</label>
+<input type="text" name="product_name" class="form-control" required>
+</div>
 
-    return render_template('stock.html', data=data)
+<div class="col-md-2">
+<label class="form-label">Price</label>
+<input type="number" step="0.01" name="price" class="form-control" required>
+</div>
+
+<div class="col-md-2">
+<label class="form-label">Quantity</label>
+<input type="number" step="0.01" name="quantity" class="form-control" required>
+</div>
+
+<div class="col-md-2 d-flex align-items-end">
+<button type="submit" class="btn btn-primary w-100">Add Stock</button>
+</div>
+
+</div>
+</form>
+</div>
+
+<!-- STOCK TABLE -->
+
+<div class="card mt-4 p-3 shadow-sm">
+
+<h4 class="mb-3">📊 Stock Summary</h4>
+
+<table class="table table-bordered table-striped">
+<thead class="table-dark">
+<tr>
+<th>Product ID</th>
+<th>Product</th>
+<th>Price</th>
+<th>Quantity</th>
+<th>Last Updated</th>
+<th>Actions</th>
+</tr>
+</thead>
+
+<tbody>
+{% for row in data %}
+<tr>
+<td>{{ row.product_id }}</td>
+<td>{{ row.product_name }}</td>
+<td>₹ {{ row.price }}</td>
+<td>{{ row.quantity }}</td>
+<td>{{ row.last_updated }}</td>
+
+<td>
+<a href="/edit_stock/{{ row.product_id }}" class="btn btn-warning btn-sm">Edit</a>
+<a href="/delete_stock/{{ row.product_id }}" 
+   class="btn btn-danger btn-sm"
+   onclick="return confirm('Delete this product?')">
+   Delete
+</a>
+</td>
+
+</tr>
+{% else %}
+<tr>
+<td colspan="6" class="text-center text-muted">No stock data available</td>
+</tr>
+{% endfor %}
+</tbody>
+
+</table>
+
+</div>
+
+</div>
+
+{% endblock %}

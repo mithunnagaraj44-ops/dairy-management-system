@@ -338,7 +338,6 @@ def stock():
             price = float(request.form.get('price') or 0)
             quantity = float(request.form.get('quantity') or 0)
 
-            # INSERT WITHOUT user_phone
             cursor.execute("""
                 INSERT INTO stock 
                 (product_id, product_name, price, quantity, last_updated)
@@ -351,17 +350,13 @@ def stock():
             print("STOCK ERROR:", e)
             return "Error adding stock"
 
-    # LOAD ALL STOCK
-    cursor.execute("""
-        SELECT * FROM stock 
-        ORDER BY last_updated DESC
-    """)
+    cursor.execute("SELECT * FROM stock ORDER BY last_updated DESC")
     data = cursor.fetchall()
+
     cursor.close()
     db.close()
 
     return render_template('stock.html', data=data)
-
 
 # ================= SALES =================
 @app.route('/sales', methods=['GET','POST'])
@@ -383,7 +378,10 @@ def sales():
             if not product_id or quantity <= 0:
                 error = "Invalid input"
             else:
-                cursor.execute("SELECT * FROM stock WHERE product_id=%s", (product_id,))
+                cursor.execute(
+                    "SELECT * FROM stock WHERE product_id=%s",
+                    (product_id,)
+                )
                 product = cursor.fetchone()
 
                 if not product:
@@ -419,7 +417,13 @@ def sales():
     cursor.close()
     db.close()
 
-    return render_template('sales.html', data=data, products=products, error=error, success=success)
+    return render_template(
+        'sales.html',
+        data=data,
+        products=products,
+        error=error,
+        success=success
+    )
 
 
 # ================= HISTORY =================
