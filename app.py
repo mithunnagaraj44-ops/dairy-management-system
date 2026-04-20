@@ -100,48 +100,34 @@ def home():
     db = get_db()
     if db is None:
         return "Database not connected"
+
     cursor = db.cursor()
 
-    cursor.execute("SELECT COUNT(*) FROM farmers")
-    farmers = cursor.fetchone()[0]
+    try:
+        cursor.execute("SELECT COUNT(*) FROM farmers")
+        farmers = cursor.fetchone()[0]
+    except:
+        farmers = 0
 
-    cursor.execute("SELECT IFNULL(SUM(qty),0) FROM milk_collection")
-    milk = float(cursor.fetchone()[0])
+    try:
+        cursor.execute("SELECT IFNULL(SUM(quantity),0) FROM milk")
+        milk = float(cursor.fetchone()[0])
+    except:
+        milk = 0
 
-    cursor.execute("SELECT IFNULL(SUM(total_amount),0) FROM payments WHERE status='Paid'")
-    paid_amount = float(cursor.fetchone()[0])
+    try:
+        cursor.execute("SELECT IFNULL(SUM(total_amount),0) FROM payments")
+        payments = float(cursor.fetchone()[0])
+    except:
+        payments = 0
 
-    cursor.execute("SELECT IFNULL(SUM(total),0) FROM sales")
-    sales = float(cursor.fetchone()[0])
+    try:
+        cursor.execute("SELECT IFNULL(SUM(total_price),0) FROM sales")
+        sales = float(cursor.fetchone()[0])
+    except:
+        sales = 0
 
-    payments = paid_amount
-    profit = sales - paid_amount
-
-    cursor.execute("""
-        SELECT MONTH(date), IFNULL(SUM(total),0)
-        FROM sales
-        GROUP BY MONTH(date)
-    """)
-    sales_data = [0]*6
-    for row in cursor.fetchall():
-        month = int(row[0])
-        if month <= 6:
-            sales_data[month-1] = float(row[1])
-
-    cursor.execute("""
-        SELECT MONTH(payment_date), IFNULL(SUM(total_amount),0)
-        FROM payments WHERE status='Paid'
-        GROUP BY MONTH(payment_date)
-    """)
-    payment_data = [0]*6
-    for row in cursor.fetchall():
-        month = int(row[0])
-        if month <= 6:
-            payment_data[month-1] = float(row[1])
-
-    profit_data = []
-    for i in range(6):
-        profit_data.append(sales_data[i] - payment_data[i])
+    profit = sales - payments
 
     return render_template(
         'index.html',
@@ -150,8 +136,8 @@ def home():
         payments=payments,
         sales=sales,
         profit=profit,
-        sales_data=sales_data,
-        profit_data=profit_data
+        sales_data=[0]*6,
+        profit_data=[0]*6
     )
 
 
