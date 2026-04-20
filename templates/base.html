@@ -9,6 +9,7 @@
     <style>
         body {
             background: #f4f6f9;
+            font-family: 'Segoe UI', sans-serif;
         }
 
         .sidebar {
@@ -20,16 +21,28 @@
             padding: 20px;
         }
 
+        .sidebar h3 {
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+
         .sidebar a {
             display: block;
             color: white;
             text-decoration: none;
             padding: 10px;
             border-radius: 6px;
+            margin-bottom: 5px;
+            transition: 0.3s;
         }
 
         .sidebar a:hover {
             background: rgba(255,255,255,0.2);
+            padding-left: 15px;
+        }
+
+        .sidebar a.active {
+            background: rgba(255,255,255,0.3);
         }
 
         .main {
@@ -41,29 +54,53 @@
             border-radius: 12px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
+
+        .topbar {
+            background: white;
+            padding: 10px 20px;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
     </style>
 </head>
 
 <body>
 
 <div class="sidebar">
-    <h3> 🐄 Dairy Management</h3>
+    <h3>🐄 Dairy Management</h3>
 
     <a href="/"><i class="bi bi-speedometer2"></i> Dashboard</a>
     <a href="/farmers"><i class="bi bi-people"></i> Farmers</a>
-   <a href="/milk"><i class="bi bi-droplet"></i> Milk Collection</a>
-<a href="/payments"><i class="bi bi-cash"></i> Payments</a>
+    <a href="/milk"><i class="bi bi-droplet"></i> Milk Collection</a>
+    <a href="/payments"><i class="bi bi-cash"></i> Payments</a>
     <a href="/sales"><i class="bi bi-cart"></i> Sales</a>
     <a href="/stock"><i class="bi bi-box"></i> Stock</a>
-<a href="/history"><i class="bi bi-clock-history"></i> History</a>
-<a href="/profit"><i class="bi bi-graph-up"></i> Profit Report</a>
-<a href="/logout" style="color:red;">
-    🚪 Logout
-</a>
+    <a href="/history"><i class="bi bi-clock-history"></i> History</a>
+    <a href="/profit"><i class="bi bi-graph-up"></i> Profit</a>
+
+    <hr>
+
+    <a href="/logout" class="text-danger">
+        <i class="bi bi-box-arrow-right"></i> Logout
+    </a>
 </div>
 
 <div class="main">
+
+    <!-- TOP BAR -->
+    <div class="topbar">
+        <h5 class="mb-0">Dashboard</h5>
+        <div>
+            Logged in: <b>{{ session['user'] }}</b>
+        </div>
+    </div>
+
     {% block content %}{% endblock %}
+
 </div>
 
 </body>

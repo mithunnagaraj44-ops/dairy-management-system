@@ -2,12 +2,33 @@
 
 {% block content %}
 
-<h1>Edit Farmer</h1>
+<div class="container p-4">
 
-<form method="POST" class="bg-white p-4 shadow">
-    <input name="name" value="{{farmer.name}}" class="border p-2 mr-2">
-    <input name="phone" value="{{farmer.phone}}" class="border p-2 mr-2">
-    <button class="bg-green-500 text-white px-4 py-2">Update</button>
+<h2 class="mb-4">✏️ Edit Farmer</h2>
+
+<div class="card card-box p-4">
+
+<form method="POST">
+
+<div class="mb-3">
+<label class="form-label">Farmer Name</label>
+<input type="text" name="name" value="{{ farmer.name }}" class="form-control" required>
+</div>
+
+<div class="mb-3">
+<label class="form-label">Phone Number</label>
+<input type="text" name="phone" value="{{ farmer.phone }}" class="form-control" required>
+</div>
+
+<div class="d-flex gap-2">
+<button class="btn btn-success">Update</button>
+<a href="/farmers" class="btn btn-secondary">Cancel</a>
+</div>
+
 </form>
+
+</div>
+
+</div>
 
 {% endblock %}

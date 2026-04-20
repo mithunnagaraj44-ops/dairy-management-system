@@ -2,73 +2,90 @@
 
 {% block content %}
 
-<h2 class="mb-4">👨‍🌾 Farmer Management</h2>
+<h2 class="mb-4 fw-bold">👨‍🌾 Farmer Management</h2>
 
-<div class="card card-box p-4 mb-4">
+<!-- ADD FARMER -->
+<div class="card shadow-sm border-0 p-4 mb-4 rounded-4">
     <form method="POST" class="row g-3">
 
         <div class="col-md-4">
-            <input type="text" name="name" class="form-control" placeholder="Farmer Name" required>
+            <label class="form-label">Farmer Name</label>
+            <input type="text" name="name" class="form-control" placeholder="Enter name" required>
         </div>
 
         <div class="col-md-4">
-            <input type="text" name="phone" class="form-control" placeholder="Phone Number" required>
+            <label class="form-label">Phone Number</label>
+            <input type="text" name="phone" class="form-control" placeholder="10-digit number"
+                   pattern="[0-9]{10}" required>
         </div>
 
-        <div class="col-md-2">
-            <button class="btn btn-success w-100">Add Farmer</button>
+        <div class="col-md-2 d-flex align-items-end">
+            <button class="btn btn-success w-100">
+                <i class="bi bi-person-plus"></i> Add
+            </button>
         </div>
 
     </form>
 </div>
 
-<div class="card card-box p-4">
-    <h5>Current Farmers</h5>
+<!-- FARMER LIST -->
+<div class="card shadow-sm border-0 p-4 rounded-4">
+    <h5 class="fw-semibold">Current Farmers</h5>
 
-    <table class="table table-hover mt-3">
-        <thead class="table-primary">
-            <tr>
-                <th>Farmer Code</th>
-                <th>Name</th>
-                <th>Phone</th>
-                <th>Status</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
+    <div class="table-responsive">
+        <table class="table table-hover mt-3 align-middle">
+            <thead class="table-primary">
+                <tr>
+                    <th>Farmer Code</th>
+                    <th>Name</th>
+                    <th>Phone</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
 
-        <tbody>
-            {% for f in farmers %}
-            <tr>
+            <tbody>
+                {% for f in farmers %}
+                <tr>
 
-                <td>{{ f.farmer_code or 'F---' }}</td>
+                    <td>{{ f.farmer_code or 'F---' }}</td>
 
-                <td>{{ f.name }}</td>
+                    <td>{{ f.name }}</td>
 
-                <td>{{ f.phone }}</td>
+                    <td>{{ f.phone }}</td>
 
-                <td>
-                    <span class="badge bg-success">Active</span>
-                </td>
+                    <td>
+                        <span class="badge bg-success">
+                            {{ f.status or 'Active' }}
+                        </span>
+                    </td>
 
-                <td>
+                    <td>
 
-                    <a href="/edit/{{ f.f_id }}" class="btn btn-sm btn-warning">
-                        ✏️
-                    </a>
+                        <a href="/edit/{{ f.f_id }}" class="btn btn-sm btn-warning">
+                            <i class="bi bi-pencil"></i>
+                        </a>
 
-                    <!-- ✅ FIXED DELETE (with confirmation) -->
-                    <a href="/delete/{{ f.f_id }}"
-                       class="btn btn-sm btn-danger"
-                       onclick="return confirm('Delete this farmer? All data will be removed.')">
-                        🗑️
-                    </a>
+                        <a href="/delete/{{ f.f_id }}"
+                           class="btn btn-sm btn-danger"
+                           onclick="return confirm('Delete this farmer? All data will be removed.')">
+                            <i class="bi bi-trash"></i>
+                        </a>
 
-                </td>
+                    </td>
 
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" class="text-center text-muted">
+                        No farmers found
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+
+        </table>
+    </div>
 
 </div>
 

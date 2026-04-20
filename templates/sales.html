@@ -1,146 +1,91 @@
-{% extends 'base.html' %}
-{% block content %}
+@app.route('/sales', methods=['GET','POST'])
+def sales():
+    db = get_db()
+    if db is None:
+        return "Database not connected"
 
-<div class="container-fluid p-4">
+    cursor = db.cursor(dictionary=True)
+    user = session.get('user')
 
-<h2 class="fw-bold mb-3">🛒 Sales Management</h2>
+    error = None
+    success = None
 
-<!-- ALERTS -->
-{% if error %}
-<div class="alert alert-danger text-center">
-    {{ error }}
-</div>
-{% endif %}
+    if request.method == 'POST':
+        try:
+            product_id = request.form.get('product_id')
+            quantity = float(request.form.get('quantity') or 0)
 
-{% if success %}
-<div class="alert alert-success text-center">
-    {{ success }}
-</div>
-{% endif %}
+            if not product_id or quantity <= 0:
+                error = "Invalid input"
 
-<!-- FORM -->
-<div class="card p-4 mt-3 shadow-sm border-0 rounded-4">
+            else:
+                # ✅ GET PRODUCT (USER FILTER)
+                cursor.execute("""
+                    SELECT * FROM stock 
+                    WHERE product_id=%s AND user_phone=%s
+                """, (product_id, user))
+                product = cursor.fetchone()
 
-<form method="POST">
+                if not product:
+                    error = "Product not found"
 
-<div class="row g-3">
+                elif quantity > float(product['quantity']):
+                    error = f"Only {product['quantity']} items available!"
 
-<div class="col-md-4">
-<label class="fw-semibold">Product</label>
-<select name="product_id" id="product" class="form-control" onchange="setPrice()" required>
-<option value="">Select Product</option>
-{% for p in products %}
-<option value="{{ p.product_id }}" data-price="{{ p.price }}" data-stock="{{ p.quantity }}">
-{{ p.product_name }} (Stock: {{ p.quantity }})
-</option>
-{% endfor %}
-</select>
-</div>
+                else:
+                    total = float(product['price']) * quantity
 
-<div class="col-md-2">
-<label class="fw-semibold">Price</label>
-<input type="text" id="price" class="form-control" readonly>
-</div>
+                    # ✅ INSERT SALE (WITH USER)
+                    cursor.execute("""
+                        INSERT INTO sales
+                        (product_id, product_name, price, quantity, total, date, user_phone)
+                        VALUES (%s,%s,%s,%s,%s,CURDATE(),%s)
+                    """, (
+                        product_id,
+                        product['product_name'],
+                        product['price'],
+                        quantity,
+                        total,
+                        user
+                    ))
 
-<div class="col-md-2">
-<label class="fw-semibold">Quantity</label>
-<input type="number" id="qty" name="quantity" class="form-control" min="1" oninput="calculate()" required>
-</div>
+                    # ✅ UPDATE STOCK (USER FILTER)
+                    cursor.execute("""
+                        UPDATE stock 
+                        SET quantity=%s 
+                        WHERE product_id=%s AND user_phone=%s
+                    """, (
+                        float(product['quantity']) - quantity,
+                        product_id,
+                        user
+                    ))
 
-<div class="col-md-2">
-<label class="fw-semibold">Total</label>
-<input type="text" id="total" class="form-control" readonly>
-</div>
+                    db.commit()
+                    success = "Sale completed successfully!"
 
-<div class="col-md-2 d-flex align-items-end">
-<button class="btn btn-success w-100 rounded-3">Sell</button>
-</div>
+        except Exception as e:
+            print("SALES ERROR:", e)
+            error = "Something went wrong"
 
-</div>
+    # ✅ LOAD SALES (USER ONLY)
+    cursor.execute("""
+        SELECT * FROM sales 
+        WHERE user_phone=%s 
+        ORDER BY id DESC
+    """, (user,))
+    data = cursor.fetchall()
 
-</form>
+    # ✅ LOAD PRODUCTS (USER ONLY)
+    cursor.execute("""
+        SELECT * FROM stock 
+        WHERE user_phone=%s
+    """, (user,))
+    products = cursor.fetchall()
 
-</div>
-
-<!-- SALES HISTORY -->
-<div class="card mt-4 p-3 shadow-sm border-0 rounded-4">
-
-<h4 class="fw-semibold">Sales History</h4>
-
-<div class="table-responsive">
-<table class="table mt-3 table-striped align-middle">
-<thead class="table-light">
-<tr>
-<th>Product</th>
-<th>Price</th>
-<th>Qty</th>
-<th>Total</th>
-<th>Date</th>
-</tr>
-</thead>
-
-<tbody>
-{% for row in data %}
-<tr>
-<td>{{ row.product_name }}</td>
-<td>₹ {{ row.price }}</td>
-<td>{{ row.quantity }}</td>
-<td>₹ {{ row.total }}</td>
-<td>{{ row.date }}</td>
-</tr>
-{% else %}
-<tr>
-<td colspan="5" class="text-center text-muted">No sales yet</td>
-</tr>
-{% endfor %}
-</tbody>
-
-</table>
-</div>
-
-</div>
-
-</div>
-
-<script>
-function setPrice(){
-    let select = document.getElementById("product")
-
-    if(select.selectedIndex === 0){
-        document.getElementById("price").value = ""
-        document.getElementById("total").value = ""
-        return
-    }
-
-    let option = select.options[select.selectedIndex]
-    let price = option.getAttribute("data-price")
-
-    document.getElementById("price").value = price || ""
-    calculate()
-}
-
-function calculate(){
-    let price = parseFloat(document.getElementById("price").value) || 0
-    let qty = parseFloat(document.getElementById("qty").value) || 0
-    let select = document.getElementById("product")
-
-    if(select.selectedIndex === 0){
-        return
-    }
-
-    let stock = parseFloat(select.options[select.selectedIndex].getAttribute("data-stock")) || 0
-
-    if(qty > stock){
-        document.getElementById("total").value = ""
-        return
-    }
-
-    if(price > 0 && qty > 0){
-        document.getElementById("total").value = (price * qty).toFixed(2)
-    } else {
-        document.getElementById("total").value = ""
-    }
-}
-</script>
-
-{% endblock %}
+    return render_template(
+        'sales.html',
+        data=data,
+        products=products,
+        error=error,
+        success=success
+    )

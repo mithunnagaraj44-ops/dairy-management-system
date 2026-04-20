@@ -3,17 +3,19 @@
 
 <div class="container-fluid p-4">
 
-<h2>💰 Payment Management</h2>
+<h2 class="fw-bold">💰 Payment Management</h2>
 
-<div class="card p-4 mt-3 shadow">
+<!-- FORM -->
+<div class="card p-4 mt-3 shadow-sm rounded-4 border-0">
 
 <form method="POST">
 
-<div class="row">
+<div class="row g-3">
 
 <div class="col-md-4">
-<label>Farmer</label>
+<label class="fw-semibold">Farmer</label>
 <select name="farmer" id="farmer" class="form-control" required>
+<option value="">Select Farmer</option>
 {% for f in farmers %}
 <option value="{{f.f_id}}">
 {{ f.farmer_code or 'F---' }} - {{f.name}}
@@ -23,12 +25,12 @@
 </div>
 
 <div class="col-md-4">
-<label>Total Amount ₹</label>
-<input type="text" name="amount" id="amount" class="form-control" readonly>
+<label class="fw-semibold">Total Amount ₹</label>
+<input type="text" name="amount" id="amount" class="form-control bg-light fw-bold" readonly>
 </div>
 
 <div class="col-md-4">
-<label>Status</label>
+<label class="fw-semibold">Status</label>
 <select name="status" class="form-control">
 <option value="Paid">Paid</option>
 <option value="Unpaid">Unpaid</option>
@@ -38,18 +40,24 @@
 </div>
 
 <div class="mt-3">
-<button class="btn btn-primary">Record Settlement</button>
+<button class="btn btn-primary px-4" id="submitBtn" disabled>
+Record Settlement
+</button>
 </div>
 
 </form>
 
 </div>
 
-<div class="card p-4 mt-4 shadow">
+<!-- TABLE -->
+<div class="card p-4 mt-4 shadow-sm rounded-4 border-0">
 
-<h4>Farmer Payment Summary</h4>
+<h4 class="fw-semibold">Farmer Payment Summary</h4>
 
-<table class="table mt-3">
+<div class="table-responsive">
+<table class="table mt-3 table-striped table-hover align-middle">
+
+<thead class="table-light">
 <tr>
 <th>Farmer</th>
 <th>Total Amount</th>
@@ -57,7 +65,9 @@
 <th>Date</th>
 <th>Action</th>
 </tr>
+</thead>
 
+<tbody>
 {% for row in data %}
 <tr>
 
@@ -87,8 +97,9 @@
     <input type="hidden" name="farmer" value="{{row.f_id}}">
     <input type="hidden" name="amount" value="{{row.total_amount}}">
     <input type="hidden" name="status" value="Paid">
-
-    <button class="btn btn-success btn-sm">Mark Paid</button>
+    <button class="btn btn-success btn-sm">
+        Mark Paid
+    </button>
 </form>
 {% else %}
 <span class="text-muted">No dues</span>
@@ -96,9 +107,15 @@
 </td>
 
 </tr>
+{% else %}
+<tr>
+<td colspan="5" class="text-center text-muted">No data found</td>
+</tr>
 {% endfor %}
+</tbody>
 
 </table>
+</div>
 
 </div>
 
@@ -107,16 +124,24 @@
 <script>
 function loadAmount(){
     let farmer = document.getElementById("farmer").value;
+    let submitBtn = document.getElementById("submitBtn");
 
-    if(!farmer) return;
+    if(!farmer){
+        document.getElementById("amount").value = "";
+        submitBtn.disabled = true;
+        return;
+    }
 
     fetch("/get_amount/" + farmer)
     .then(res => res.json())
     .then(data => {
-        document.getElementById("amount").value = data.amount ?? 0;
+        let amount = data.amount ?? 0;
+        document.getElementById("amount").value = amount > 0 ? amount.toFixed(2) : "0";
+        submitBtn.disabled = false;
     })
     .catch(() => {
-        document.getElementById("amount").value = 0;
+        document.getElementById("amount").value = "0";
+        submitBtn.disabled = true;
     });
 }
 

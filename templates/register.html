@@ -1,26 +1,47 @@
 {% extends 'base.html' %}
 {% block content %}
 
-<div class="container mt-5">
-    <div class="card p-4 mx-auto" style="max-width:400px;">
-        <h3 class="text-center mb-3">Manager Register</h3>
+<div class="d-flex justify-content-center align-items-center" style="height:80vh;">
 
-        <form method="POST" action="/register">
+<div class="card shadow-lg p-4 rounded-4" style="width:360px;">
 
-            <label>Phone Number</label>
-            <input type="text" name="phone" class="form-control mb-3" required>
+<h4 class="text-center fw-bold mb-3">🐄 Create Account</h4>
 
-            <label>Password</label>
-            <input type="password" name="password" class="form-control mb-3" required>
+<form method="POST" action="/register">
 
-            <button class="btn btn-success w-100">Register</button>
+<div class="mb-3">
+<label class="form-label">Phone Number</label>
+<div class="input-group">
+<span class="input-group-text"><i class="bi bi-telephone"></i></span>
+<input type="text" name="phone" class="form-control"
+       placeholder="Enter phone"
+       pattern="[0-9]{10}" required>
+</div>
+</div>
 
-        </form>
+<div class="mb-3">
+<label class="form-label">Password</label>
+<div class="input-group">
+<span class="input-group-text"><i class="bi bi-lock"></i></span>
+<input type="password" name="password" class="form-control"
+       placeholder="Enter password" required>
+</div>
+</div>
 
-        <div class="text-center mt-3">
-            <a href="/login">Already have account? Login</a>
-        </div>
-    </div>
+<button class="btn btn-success w-100 mt-2">
+<i class="bi bi-person-plus"></i> Register
+</button>
+
+</form>
+
+<div class="text-center mt-3">
+<a href="/login" class="text-decoration-none fw-semibold">
+Already have account? Login
+</a>
+</div>
+
+</div>
+
 </div>
 
 {% endblock %}
