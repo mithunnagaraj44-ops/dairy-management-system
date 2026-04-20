@@ -375,7 +375,7 @@ def sales():
 
     if request.method == 'POST':
         try:
-            product_id = request.form.get('product_id')
+            product_id = request.form.get('product_id').strip()
             quantity = float(request.form.get('quantity') or 0)
 
             if not product_id or quantity <= 0:
@@ -420,17 +420,15 @@ def sales():
 
         except Exception as e:
             print("SALES ERROR:", e)
-            error = "Something went wrong"
+            error = str(e)
 
     cursor.execute("""
         SELECT * FROM sales 
-        ORDER BY id DESC
+        ORDER BY date DESC
     """)
     data = cursor.fetchall()
 
-    cursor.execute("""
-        SELECT * FROM stock
-    """)
+    cursor.execute("SELECT * FROM stock")
     products = cursor.fetchall()
 
     cursor.close()
