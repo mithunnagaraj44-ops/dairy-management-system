@@ -70,66 +70,6 @@ def register():
     return render_template('register.html')
 
 
-
-# ================= APPROVAL USERS =================
-@app.route('/approve_users')
-def approve_users():
-
-    # ONLY PROPRIETOR CAN ACCESS
-    if session['user'] != '8073478057':
-        return "Access Denied"
-
-    db = get_db()
-
-    if db is None:
-        return "Database not connected"
-
-    cursor = db.cursor(dictionary=True)
-
-    cursor.execute("""
-        SELECT * FROM manager
-        WHERE status='pending'
-    """)
-
-    users = cursor.fetchall()
-
-    cursor.close()
-    db.close()
-
-    return render_template(
-        'approve_users.html',
-        users=users
-    )
-
-@app.route('/reject/<int:id>')
-def reject(id):
-
-    # ONLY PROPRIETOR
-    if session['user'] != '8073478057':
-        return "Access Denied"
-
-    db = get_db()
-
-    if db is None:
-        return "Database not connected"
-
-    cursor = db.cursor()
-
-    cursor.execute("""
-        UPDATE manager
-        SET status='rejected'
-        WHERE id=%s
-    """, (id,))
-
-    db.commit()
-
-    cursor.close()
-    db.close()
-
-    return redirect('/approve_users')
-
-
-
 # ================= LOGIN =================
 @app.route('/login', methods=['GET','POST'])
 def login():
@@ -758,6 +698,88 @@ def edit_stock(product_id):
     db.close()
 
     return render_template('edit_stock.html', data=data)
+
+
+
+# ================= APPROVAL USERS =================
+@app.route('/approve_users')
+def approve_users():
+
+    # ONLY PROPRIETOR CAN ACCESS
+    if session['user'] != '8073478057':
+        return "Access Denied"
+
+    db = get_db()
+
+    if db is None:
+        return "Database not connected"
+
+    cursor = db.cursor(dictionary=True)
+
+    cursor.execute("""
+        SELECT * FROM manager
+        WHERE status='pending'
+    """)
+
+    users = cursor.fetchall()
+
+    cursor.close()
+    db.close()
+
+    return render_template(
+        'approve_users.html',
+        users=users
+    )
+
+
+# ================= APPROVE =================
+@app.route('/approve/<int:id>')
+def approve(id):
+
+    if session['user'] != '8073478057':
+        return "Access Denied"
+
+    db = get_db()
+    cursor = db.cursor()
+
+    cursor.execute("""
+        UPDATE manager
+        SET status='approved'
+        WHERE id=%s
+    """, (id,))
+
+    db.commit()
+
+    cursor.close()
+    db.close()
+
+    return redirect('/approve_users')
+
+
+# ================= REJECT =================
+@app.route('/reject/<int:id>')
+def reject(id):
+
+    if session['user'] != '8073478057':
+        return "Access Denied"
+
+    db = get_db()
+    cursor = db.cursor()
+
+    cursor.execute("""
+        UPDATE manager
+        SET status='rejected'
+        WHERE id=%s
+    """, (id,))
+
+    db.commit()
+
+    cursor.close()
+    db.close()
+
+    return redirect('/approve_users')
+
+
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
