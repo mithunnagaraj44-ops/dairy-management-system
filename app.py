@@ -71,10 +71,11 @@ def register():
 
 
 
-@app.route('/approve/<int:id>')
-def approve(id):
+# ================= APPROVAL USERS =================
+@app.route('/approve_users')
+def approve_users():
 
-    # ONLY PROPRIETOR
+    # ONLY PROPRIETOR CAN ACCESS
     if session['user'] != '8073478057':
         return "Access Denied"
 
@@ -83,20 +84,22 @@ def approve(id):
     if db is None:
         return "Database not connected"
 
-    cursor = db.cursor()
+    cursor = db.cursor(dictionary=True)
 
     cursor.execute("""
-        UPDATE manager
-        SET status='approved'
-        WHERE id=%s
-    """, (id,))
+        SELECT * FROM manager
+        WHERE status='pending'
+    """)
 
-    db.commit()
+    users = cursor.fetchall()
 
     cursor.close()
     db.close()
 
-    return redirect('/approve_users')
+    return render_template(
+        'approve_users.html',
+        users=users
+    )
 
 @app.route('/reject/<int:id>')
 def reject(id):
