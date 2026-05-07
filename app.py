@@ -51,26 +51,88 @@ def register():
             return "User already exists"
 
         cursor.execute(
-            "INSERT INTO manager (phone, password) VALUES (%s,%s)",
-            (phone, password)
-        )
+    """
+    INSERT INTO manager (phone, password, status)
+    VALUES (%s,%s,'pending')
+    """,
+    (phone, password)
+)
         db.commit()
 
     cursor.close()
     db.close()
-    return redirect('/login') if request.method == 'POST' else render_template('register.html')
+    if request.method == 'POST':
+     return render_template(
+        'register.html',
+        message="Registration submitted. Waiting for proprietor approval."
+    )
+
+    return render_template('register.html')
+
+
+
+@app.route('/approve_users')
+def approve_users():
+
+
+    if session['user'] != '8073478057':
+     return "Access Denied"
+
+    db = get_db()
+    cursor = db.cursor(dictionary=True)
+
+    cursor.execute("""
+        SELECT * FROM manager
+        WHERE status='pending'
+    """)
+
+    users = cursor.fetchall()
+
+    cursor.close()
+    db.close()
+
+    return render_template(
+        'approve_users.html',
+        users=users
+    )
+
+@app.route('/reject/<int:id>')
+def reject(id):
+
+    if session['user'] != '8073478057':
+     return "Access Denied"
+
+    db = get_db()
+    cursor = db.cursor()
+
+    cursor.execute("""
+        UPDATE manager
+        SET status='rejected'
+        WHERE id=%s
+    """, (id,))
+
+    db.commit()
+
+    cursor.close()
+    db.close()
+
+    return redirect('/approve_users')
+
 
 
 # ================= LOGIN =================
 @app.route('/login', methods=['GET','POST'])
 def login():
+
     db = get_db()
+
     if db is None:
         return "Database not connected"
 
     cursor = db.cursor(dictionary=True)
 
     if request.method == 'POST':
+
         phone = request.form['phone']
         password = request.form['password']
 
@@ -78,19 +140,48 @@ def login():
             "SELECT * FROM manager WHERE phone=%s AND password=%s",
             (phone, password)
         )
+
         user = cursor.fetchone()
 
         cursor.close()
         db.close()
 
+        # ================= USER FOUND =================
         if user:
-            session['user'] = user['phone']
-            return redirect('/')
+
+            # APPROVED
+            if user['status'] == 'approved':
+
+                session['user'] = user['phone']
+                return redirect('/')
+
+            # PENDING
+            elif user['status'] == 'pending':
+
+                return render_template(
+                    'login.html',
+                    error="Waiting for proprietor approval"
+                )
+
+            # REJECTED
+            else:
+
+                return render_template(
+                    'login.html',
+                    error="Account rejected"
+                )
+
+        # INVALID LOGIN
         else:
-            return render_template('login.html', error="Invalid phone or password")
+
+            return render_template(
+                'login.html',
+                error="Invalid phone or password"
+            )
 
     cursor.close()
     db.close()
+
     return render_template('login.html')
 
 

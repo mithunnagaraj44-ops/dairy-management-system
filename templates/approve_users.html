@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="container mt-4">
+
+<h2>Pending User Approvals</h2>
+
+<table class="table table-bordered mt-3">
+
+<tr>
+    <th>ID</th>
+    <th>Phone</th>
+    <th>Status</th>
+    <th>Action</th>
+</tr>
+
+{% for user in users %}
+<tr>
+    <td>{{ user.id }}</td>
+    <td>{{ user.phone }}</td>
+    <td>{{ user.status }}</td>
+
+    <td>
+        <a href="/approve/{{ user.id }}"
+           class="btn btn-success">
+           Approve
+        </a>
+
+        <a href="/reject/{{ user.id }}"
+           class="btn btn-danger">
+           Reject
+        </a>
+    </td>
+</tr>
+{% endfor %}
+
+</table>
+
+</div>
+
+{% endblock %}
