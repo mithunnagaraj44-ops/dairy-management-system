@@ -31,41 +31,70 @@ def check_login():
 
 
 # ================= REGISTER =================
+# ================= REGISTER =================
 @app.route('/register', methods=['GET','POST'])
 def register():
+
     db = get_db()
+
     if db is None:
         return "Database not connected"
 
     cursor = db.cursor(dictionary=True)
 
     if request.method == 'POST':
+
         phone = request.form.get('phone')
         password = request.form.get('password')
 
         if not phone or not password:
             return "Missing data"
 
-        cursor.execute("SELECT * FROM manager WHERE phone=%s", (phone,))
-        if cursor.fetchone():
-            return "User already exists"
+        # CHECK EXISTING USER
+        cursor.execute("""
+            SELECT * FROM manager
+            WHERE phone=%s
+            AND status != 'rejected'
+        """, (phone,))
 
-        cursor.execute(
-    """
-    INSERT INTO manager (phone, password, status)
-    VALUES (%s,%s,'pending')
-    """,
-    (phone, password)
-)
+        existing_user = cursor.fetchone()
+
+        # USER ALREADY EXISTS
+        if existing_user:
+
+            cursor.close()
+            db.close()
+
+            return render_template(
+                'register.html',
+                message="User already exists"
+            )
+
+        # REMOVE OLD REJECTED ACCOUNT
+        cursor.execute("""
+            DELETE FROM manager
+            WHERE phone=%s
+            AND status='rejected'
+        """, (phone,))
+
+        # INSERT NEW PENDING ACCOUNT
+        cursor.execute("""
+            INSERT INTO manager (phone, password, status)
+            VALUES (%s,%s,'pending')
+        """, (phone, password))
+
         db.commit()
+
+        cursor.close()
+        db.close()
+
+        return render_template(
+            'register.html',
+            message="Registration submitted. Waiting for proprietor approval."
+        )
 
     cursor.close()
     db.close()
-    if request.method == 'POST':
-     return render_template(
-        'register.html',
-        message="Registration submitted. Waiting for proprietor approval."
-    )
 
     return render_template('register.html')
 
