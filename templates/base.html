@@ -82,6 +82,12 @@
     <a href="/history"><i class="bi bi-clock-history"></i> History</a>
     <a href="/profit"><i class="bi bi-graph-up"></i> Profit</a>
 
+{% if session['user'] == '8073478057' %}
+<a href="/approve_users">
+    <i class="bi bi-person-check"></i> Approvals
+</a>
+{% endif %}
+
     <hr>
 
     <a href="/logout" class="text-danger">
