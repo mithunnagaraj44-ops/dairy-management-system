@@ -397,48 +397,75 @@ def farmers():
 # ================= MILK =================
 @app.route('/milk', methods=['GET','POST'])
 def milk():
+
+    from datetime import date
+
     db = get_db()
+
     if db is None:
         return "Database not connected"
 
     cursor = db.cursor(dictionary=True)
 
+    # ================= INSERT =================
     if request.method == 'POST':
+
         farmer_id = request.form['farmer']
         qty = float(request.form['qty'])
         fat = float(request.form['fat'])
         session_type = request.form['session']
-        date = request.form['date']
+        collection_date = request.form['date']
         time = request.form['time']
 
         rate = 25 + (fat * 7)
         amount = qty * rate
 
-        # INSERT WITHOUT user_phone
         cursor.execute("""
             INSERT INTO milk_collection
             (farmer_id, qty, fat, session, date, time, amount)
             VALUES (%s,%s,%s,%s,%s,%s,%s)
-        """, (farmer_id, qty, fat, session_type, date, time, amount))
+        """, (
+            farmer_id,
+            qty,
+            fat,
+            session_type,
+            collection_date,
+            time,
+            amount
+        ))
 
         db.commit()
 
-    # LOAD ALL DATA
+    # ================= TODAY COLLECTIONS ONLY =================
+    today = date.today()
+
     cursor.execute("""
         SELECT m.*, f.name
         FROM milk_collection m
         JOIN farmers f ON m.farmer_id = f.f_id
+        WHERE DATE(m.date) = %s
         ORDER BY m.id DESC
-    """)
+    """, (today,))
+
     data = cursor.fetchall()
 
-    # LOAD ALL FARMERS
-    cursor.execute("SELECT * FROM farmers")
+    # ================= LOAD FARMERS =================
+    cursor.execute("""
+        SELECT *
+        FROM farmers
+        ORDER BY name ASC
+    """)
+
     farmers = cursor.fetchall()
+
     cursor.close()
     db.close()
 
-    return render_template('milk.html', data=data, farmers=farmers)
+    return render_template(
+        'milk.html',
+        data=data,
+        farmers=farmers
+    )
 
 # ================= PAYMENTS =================
 @app.route('/payments', methods=['GET','POST'])
