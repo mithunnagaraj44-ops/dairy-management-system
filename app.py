@@ -32,7 +32,7 @@ def check_login():
 
 # ================= REGISTER =================
 # ================= REGISTER =================
-@app.route('/register', methods=['GET','POST'])
+@app.route('/register', methods=['GET', 'POST'])
 def register():
 
     db = get_db()
@@ -44,17 +44,23 @@ def register():
 
     if request.method == 'POST':
 
+        name = request.form.get('name')
         phone = request.form.get('phone')
         password = request.form.get('password')
 
-        if not phone or not password:
+        if not name or not phone or not password:
             return "Missing data"
 
         # CHECK EXISTING USER
         cursor.execute("""
-            SELECT * FROM manager
+
+            SELECT *
+
+            FROM manager
+
             WHERE phone=%s
             AND status != 'rejected'
+
         """, (phone,))
 
         existing_user = cursor.fetchone()
@@ -66,22 +72,32 @@ def register():
             db.close()
 
             return render_template(
+
                 'register.html',
+
                 message="User already exists"
+
             )
 
         # REMOVE OLD REJECTED ACCOUNT
         cursor.execute("""
+
             DELETE FROM manager
+
             WHERE phone=%s
             AND status='rejected'
+
         """, (phone,))
 
-        # INSERT NEW PENDING ACCOUNT
+        # INSERT NEW ACCOUNT
         cursor.execute("""
-            INSERT INTO manager (phone, password, status)
-            VALUES (%s,%s,'pending')
-        """, (phone, password))
+
+            INSERT INTO manager
+            (name, phone, password, status)
+
+            VALUES (%s, %s, %s, 'pending')
+
+        """, (name, phone, password))
 
         db.commit()
 
@@ -89,8 +105,11 @@ def register():
         db.close()
 
         return render_template(
+
             'register.html',
+
             message="Registration submitted. Waiting for proprietor approval."
+
         )
 
     cursor.close()

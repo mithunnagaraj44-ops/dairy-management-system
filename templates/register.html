@@ -1,25 +1,60 @@
 {% extends 'base.html' %}
+
 {% block content %}
 
-<div class="d-flex justify-content-center align-items-center" style="height:80vh;">
+<div class="d-flex justify-content-center align-items-center"
+     style="height:80vh;">
 
-<div class="card shadow-lg p-4 rounded-4" style="width:360px;">
+<div class="card shadow-lg p-4 rounded-4"
+     style="width:360px;">
 
-<h4 class="text-center fw-bold mb-3">🐄 Create Account</h4>
+<h4 class="text-center fw-bold mb-3">
+🐄 Create Account
+</h4>
 
-<!-- SUCCESS / ERROR MESSAGE -->
+<!-- MESSAGE -->
 {% if message %}
+
 <div class="alert alert-info text-center">
     {{ message }}
 </div>
+
 {% endif %}
 
 <form method="POST" action="/register">
 
+<!-- NAME -->
 <div class="mb-3">
-<label class="form-label">Phone Number</label>
+
+<label class="form-label">
+Name
+</label>
 
 <div class="input-group">
+
+<span class="input-group-text">
+<i class="bi bi-person"></i>
+</span>
+
+<input type="text"
+       name="name"
+       class="form-control"
+       placeholder="Enter name"
+       required>
+
+</div>
+
+</div>
+
+<!-- PHONE -->
+<div class="mb-3">
+
+<label class="form-label">
+Phone Number
+</label>
+
+<div class="input-group">
+
 <span class="input-group-text">
 <i class="bi bi-telephone"></i>
 </span>
@@ -30,13 +65,20 @@
        placeholder="Enter phone"
        pattern="[0-9]{10}"
        required>
-</div>
+
 </div>
 
+</div>
+
+<!-- PASSWORD -->
 <div class="mb-3">
-<label class="form-label">Password</label>
+
+<label class="form-label">
+Password
+</label>
 
 <div class="input-group">
+
 <span class="input-group-text">
 <i class="bi bi-lock"></i>
 </span>
@@ -46,19 +88,30 @@
        class="form-control"
        placeholder="Enter password"
        required>
+
 </div>
+
 </div>
 
 <button class="btn btn-success w-100 mt-2">
-<i class="bi bi-person-plus"></i> Register
+
+<i class="bi bi-person-plus"></i>
+
+Register
+
 </button>
 
 </form>
 
 <div class="text-center mt-3">
-<a href="/login" class="text-decoration-none fw-semibold">
+
+<a href="/login"
+   class="text-decoration-none fw-semibold">
+
 Already have account? Login
+
 </a>
+
 </div>
 
 </div>
