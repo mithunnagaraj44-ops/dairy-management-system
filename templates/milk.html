@@ -13,33 +13,54 @@
 <div class="row g-3">
 
 <!-- FARMER -->
-<div class="col-md-3">
+<div class="col-md-3 position-relative">
 
 <label class="fw-semibold">Farmer</label>
 
 <input type="text"
        id="farmerSearch"
        class="form-control"
-       placeholder="Search & Select Farmer..."
+       placeholder="Search Farmer..."
        autocomplete="off">
 
-<select name="farmer"
-        id="farmerSelect"
-        class="form-control mt-2"
-        size="5"
-        required>
-
-<option value="">Select Farmer</option>
+<!-- CUSTOM DROPDOWN -->
+<div id="farmerDropdown"
+     class="shadow bg-white border rounded-3 position-absolute w-100 mt-1 d-none"
+     style="max-height:220px;
+            overflow-y:auto;
+            z-index:1000;">
 
 {% for f in farmers %}
 
-<option value="{{f.f_id}}">
-    {{f.f_id}} - {{f.name}}
-</option>
+<div class="farmer-item px-3 py-2 border-bottom"
+     data-id="{{f.f_id}}"
+     data-name="{{f.name}}"
+     style="cursor:pointer;
+            transition:0.2s;">
+
+    <div class="fw-semibold">
+
+        {{f.name}}
+
+    </div>
+
+    <small class="text-muted">
+
+        Farmer ID : {{f.f_id}}
+
+    </small>
+
+</div>
 
 {% endfor %}
 
-</select>
+</div>
+
+<!-- HIDDEN INPUT -->
+<input type="hidden"
+       name="farmer"
+       id="selectedFarmer"
+       required>
 
 </div>
 
@@ -258,30 +279,90 @@ window.addEventListener("DOMContentLoaded", () => {
 const searchInput =
     document.getElementById("farmerSearch");
 
-const farmerSelect =
-    document.getElementById("farmerSelect");
+const dropdown =
+    document.getElementById("farmerDropdown");
 
+const farmerItems =
+    document.querySelectorAll(".farmer-item");
+
+const selectedFarmer =
+    document.getElementById("selectedFarmer");
+
+
+// SHOW DROPDOWN ONLY WHEN CLICK
+searchInput.addEventListener("focus", () => {
+
+    dropdown.classList.remove("d-none");
+
+});
+
+
+// SEARCH FILTER
 searchInput.addEventListener("keyup", function () {
 
     let filter =
-        searchInput.value.toLowerCase();
+        this.value.toLowerCase();
 
-    for (let i = 0; i < farmerSelect.options.length; i++) {
-
-        let option = farmerSelect.options[i];
+    farmerItems.forEach(item => {
 
         let txt =
-            option.text.toLowerCase();
+            item.innerText.toLowerCase();
 
-        if (txt.includes(filter) || option.value === "") {
+        item.style.display =
+            txt.includes(filter)
+            ? "block"
+            : "none";
 
-            option.style.display = "";
+    });
 
-        } else {
+});
 
-            option.style.display = "none";
-        }
+
+// SELECT FARMER
+farmerItems.forEach(item => {
+
+    item.addEventListener("click", function () {
+
+        searchInput.value =
+            this.dataset.name;
+
+        selectedFarmer.value =
+            this.dataset.id;
+
+        dropdown.classList.add("d-none");
+
+    });
+
+});
+
+
+// CLOSE DROPDOWN
+document.addEventListener("click", function(e){
+
+    if(!searchInput.contains(e.target) &&
+       !dropdown.contains(e.target)){
+
+        dropdown.classList.add("d-none");
+
     }
+
+});
+
+
+// HOVER EFFECT
+farmerItems.forEach(item => {
+
+    item.addEventListener("mouseenter", () => {
+
+        item.style.background = "#f4f6f9";
+
+    });
+
+    item.addEventListener("mouseleave", () => {
+
+        item.style.background = "white";
+
+    });
 
 });
 
