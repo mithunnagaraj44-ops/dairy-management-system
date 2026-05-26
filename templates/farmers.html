@@ -6,17 +6,28 @@
 
 <!-- ADD FARMER -->
 <div class="card shadow-sm border-0 p-4 mb-4 rounded-4">
+
     <form method="POST" class="row g-3">
 
         <div class="col-md-4">
             <label class="form-label">Farmer Name</label>
-            <input type="text" name="name" class="form-control" placeholder="Enter name" required>
+
+            <input type="text"
+                   name="name"
+                   class="form-control"
+                   placeholder="Enter name"
+                   required>
         </div>
 
         <div class="col-md-4">
             <label class="form-label">Phone Number</label>
-            <input type="text" name="phone" class="form-control" placeholder="10-digit number"
-                   pattern="[0-9]{10}" required>
+
+            <input type="text"
+                   name="phone"
+                   class="form-control"
+                   placeholder="10-digit number"
+                   pattern="[0-9]{10}"
+                   required>
         </div>
 
         <div class="col-md-2 d-flex align-items-end">
@@ -26,15 +37,39 @@
         </div>
 
     </form>
+
 </div>
 
 <!-- FARMER LIST -->
 <div class="card shadow-sm border-0 p-4 rounded-4">
-    <h5 class="fw-semibold">Current Farmers</h5>
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+
+        <h5 class="fw-semibold mb-0">Current Farmers</h5>
+
+        <!-- SEARCH BAR -->
+        <form method="GET" class="d-flex">
+
+            <input type="text"
+                   name="search"
+                   class="form-control me-2"
+                   placeholder="Search farmer..."
+                   value="{{ search }}">
+
+            <button class="btn btn-primary">
+                <i class="bi bi-search"></i>
+            </button>
+
+        </form>
+
+    </div>
 
     <div class="table-responsive">
+
         <table class="table table-hover mt-3 align-middle">
+
             <thead class="table-primary">
+
                 <tr>
                     <th>Farmer Code</th>
                     <th>Name</th>
@@ -42,10 +77,13 @@
                     <th>Status</th>
                     <th>Actions</th>
                 </tr>
+
             </thead>
 
             <tbody>
+
                 {% for f in farmers %}
+
                 <tr>
 
                     <td>{{ f.farmer_code or 'F---' }}</td>
@@ -62,29 +100,85 @@
 
                     <td>
 
-                        <a href="/edit/{{ f.f_id }}" class="btn btn-sm btn-warning">
+                        <!-- EDIT -->
+                        <a href="/edit/{{ f.f_id }}"
+                           class="btn btn-sm btn-warning">
                             <i class="bi bi-pencil"></i>
                         </a>
 
+                        <!-- DELETE -->
                         <a href="/delete/{{ f.f_id }}"
                            class="btn btn-sm btn-danger"
                            onclick="return confirm('Delete this farmer? All data will be removed.')">
+
                             <i class="bi bi-trash"></i>
+
                         </a>
 
                     </td>
 
                 </tr>
+
                 {% else %}
+
                 <tr>
-                    <td colspan="5" class="text-center text-muted">
+
+                    <td colspan="5"
+                        class="text-center text-muted py-4">
+
                         No farmers found
+
                     </td>
+
                 </tr>
+
                 {% endfor %}
+
             </tbody>
 
         </table>
+
+    </div>
+
+    <!-- PAGINATION -->
+    <div class="d-flex justify-content-center mt-4">
+
+        <!-- PREVIOUS -->
+        {% if page > 1 %}
+
+        <a href="{{ url_for('farmers', page=page-1, search=search) }}"
+           class="btn btn-outline-primary me-2">
+
+            Previous
+
+        </a>
+
+        {% endif %}
+
+        <!-- PAGE NUMBERS -->
+        {% for p in range(1, total_pages + 1) %}
+
+        <a href="{{ url_for('farmers', page=p, search=search) }}"
+           class="btn {% if p == page %}btn-primary{% else %}btn-outline-primary{% endif %} me-1">
+
+            {{ p }}
+
+        </a>
+
+        {% endfor %}
+
+        <!-- NEXT -->
+        {% if page < total_pages %}
+
+        <a href="{{ url_for('farmers', page=page+1, search=search) }}"
+           class="btn btn-outline-primary ms-2">
+
+            Next
+
+        </a>
+
+        {% endif %}
+
     </div>
 
 </div>

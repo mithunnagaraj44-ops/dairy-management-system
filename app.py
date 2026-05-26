@@ -229,30 +229,42 @@ def home():
     )
 
 # ================= FARMERS =================
-@app.route('/farmers', methods=['GET','POST'])
+@app.route('/farmers', methods=['GET', 'POST'])
 def farmers():
+
     db = get_db()
+
     if db is None:
         return "Database not connected"
 
     cursor = db.cursor(dictionary=True)
 
+    # ================= ADD FARMER =================
     if request.method == 'POST':
+
         name = request.form['name']
         phone = request.form['phone']
 
-        # GET ALL FARMER CODES (no user filter)
+        # GET ALL FARMER CODES
         cursor.execute("SELECT farmer_code FROM farmers")
         codes = cursor.fetchall()
 
         used = sorted([
+
             int(c['farmer_code'][1:])
+
             for c in codes
-            if c['farmer_code'] and c['farmer_code'].startswith('F')
+
+            if c['farmer_code']
+            and c['farmer_code'].startswith('F')
+
         ])
 
+        # GENERATE NEXT CODE
         new_num = 101
+
         for num in used:
+
             if num == new_num:
                 new_num += 1
             else:
@@ -260,22 +272,105 @@ def farmers():
 
         farmer_code = f"F{new_num}"
 
-        # INSERT (removed user_phone)
+        # INSERT FARMER
         cursor.execute("""
-            INSERT INTO farmers (farmer_code, name, phone, status)
-            VALUES (%s,%s,%s,'Active')
+
+            INSERT INTO farmers
+            (farmer_code, name, phone, status)
+
+            VALUES (%s, %s, %s, 'Active')
+
         """, (farmer_code, name, phone))
 
         db.commit()
 
-    # LOAD ALL FARMERS
-    cursor.execute("SELECT * FROM farmers ORDER BY f_id")
+    # ================= SEARCH =================
+    search = request.args.get('search', '')
+
+    # ================= PAGINATION =================
+    page = request.args.get('page', 1, type=int)
+
+    per_page = 10
+
+    offset = (page - 1) * per_page
+
+    # ================= COUNT TOTAL =================
+    if search:
+
+        cursor.execute("""
+
+            SELECT COUNT(*) AS total
+
+            FROM farmers
+
+            WHERE name LIKE %s
+
+        """, ('%' + search + '%',))
+
+    else:
+
+        cursor.execute("""
+
+            SELECT COUNT(*) AS total
+
+            FROM farmers
+
+        """)
+
+    total_farmers = cursor.fetchone()['total']
+
+    import math
+    total_pages = math.ceil(total_farmers / per_page)
+
+    # ================= LOAD FARMERS =================
+    if search:
+
+        cursor.execute("""
+
+            SELECT *
+
+            FROM farmers
+
+            WHERE name LIKE %s
+
+            ORDER BY f_id DESC
+
+            LIMIT %s OFFSET %s
+
+        """, ('%' + search + '%', per_page, offset))
+
+    else:
+
+        cursor.execute("""
+
+            SELECT *
+
+            FROM farmers
+
+            ORDER BY f_id DESC
+
+            LIMIT %s OFFSET %s
+
+        """, (per_page, offset))
+
     data = cursor.fetchall()
+
     cursor.close()
     db.close()
 
-    return render_template('farmers.html', farmers=data)
+    return render_template(
 
+        'farmers.html',
+
+        farmers=data,
+
+        page=page,
+
+        total_pages=total_pages,
+
+        search=search
+
+    )
 # ================= MILK =================
 @app.route('/milk', methods=['GET','POST'])
 def milk():
