@@ -4,112 +4,209 @@
 
 <h2 class="mb-4 fw-bold">📊 Dashboard</h2>
 
+<!-- DASHBOARD CARDS -->
 <div class="row g-4">
 
-<div class="col-md-3">
-    <div class="card text-white bg-primary card-box p-3">
-        <h6><i class="bi bi-people"></i> Total Farmers</h6>
-        <h2>{{ farmers }}</h2>
+    <!-- TOTAL FARMERS -->
+    <div class="col-md-3">
+
+        <a href="/farmers" class="dashboard-link">
+
+            <div class="card text-white bg-primary dashboard-card">
+
+                <h6>
+                    <i class="bi bi-people"></i>
+                    Total Farmers
+                </h6>
+
+                <h2>{{ farmers }}</h2>
+
+            </div>
+
+        </a>
+
     </div>
-</div>
 
-<div class="col-md-3">
-    <div class="card text-white bg-success card-box p-3">
-        <h6><i class="bi bi-droplet"></i> Milk Collected</h6>
-        <h2>{{ milk }} L</h2>
+    <!-- MILK COLLECTION -->
+    <div class="col-md-3">
+
+        <a href="/milk" class="dashboard-link">
+
+            <div class="card text-white bg-success dashboard-card">
+
+                <h6>
+                    <i class="bi bi-droplet"></i>
+                    Milk Collected
+                </h6>
+
+                <h2>{{ milk }} L</h2>
+
+            </div>
+
+        </a>
+
     </div>
-</div>
 
-<div class="col-md-3">
-    <div class="card text-white bg-warning card-box p-3">
-        <h6><i class="bi bi-cash"></i> Payments</h6>
-        <h2>₹ {{ payments }}</h2>
+    <!-- PAYMENTS -->
+    <div class="col-md-3">
+
+        <a href="/payments" class="dashboard-link">
+
+            <div class="card text-white bg-warning dashboard-card">
+
+                <h6>
+                    <i class="bi bi-cash"></i>
+                    Payments
+                </h6>
+
+                <h2>₹ {{ payments }}</h2>
+
+            </div>
+
+        </a>
+
     </div>
-</div>
 
-<div class="col-md-3">
-    <div class="card text-white bg-danger card-box p-3">
-        <h6><i class="bi bi-cart"></i> Sales</h6>
-        <h2>₹ {{ sales }}</h2>
+    <!-- SALES -->
+    <div class="col-md-3">
+
+        <a href="/sales" class="dashboard-link">
+
+            <div class="card text-white bg-danger dashboard-card">
+
+                <h6>
+                    <i class="bi bi-cart"></i>
+                    Sales
+                </h6>
+
+                <h2>₹ {{ sales }}</h2>
+
+            </div>
+
+        </a>
+
     </div>
-</div>
 
 </div>
 
+<!-- CHART + PROFIT -->
 <div class="row g-3 mt-2 align-items-stretch">
 
-<div class="col-md-8">
-    <div class="card card-box p-3 h-100">
-        <h6 class="mb-2">📈 Sales & Profit Trend</h6>
+    <!-- CHART -->
+    <div class="col-md-8">
 
-        <div style="position:relative; height:240px;">
-            <canvas id="chart"></canvas>
+        <div class="card card-box p-3 h-100">
+
+            <h6 class="mb-2">
+                📈 Sales & Profit Trend
+            </h6>
+
+            <div style="position:relative; height:240px;">
+
+                <canvas id="chart"></canvas>
+
+            </div>
+
         </div>
-    </div>
-</div>
-
-<div class="col-md-4">
-    <div class="card card-box p-4 text-center h-100 d-flex flex-column justify-content-center">
-
-        <h5>💰 Net Profit</h5>
-
-        <h1 class="{% if profit > 0 %}text-success{% else %}text-danger{% endif %}">
-            ₹ {{ profit }}
-        </h1>
-
-        {% if profit > 0 %}
-            <p class="text-success">Profit 👍</p>
-        {% else %}
-            <p class="text-danger">Loss ⚠️</p>
-        {% endif %}
 
     </div>
-</div>
+
+    <!-- PROFIT -->
+    <div class="col-md-4">
+
+        <div class="card card-box p-4 text-center h-100 d-flex flex-column justify-content-center">
+
+            <h5>💰 Net Profit</h5>
+
+            <h1 class="{% if profit > 0 %}text-success{% else %}text-danger{% endif %}">
+
+                ₹ {{ profit }}
+
+            </h1>
+
+            {% if profit > 0 %}
+
+                <p class="text-success">
+                    Profit 👍
+                </p>
+
+            {% else %}
+
+                <p class="text-danger">
+                    Loss ⚠️
+                </p>
+
+            {% endif %}
+
+        </div>
+
+    </div>
 
 </div>
 
+<!-- CHART JS -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
+
 const ctx = document.getElementById('chart');
 
 const salesData = {{ sales_data | tojson }};
 const profitData = {{ profit_data | tojson }};
 
 new Chart(ctx, {
+
     type: 'line',
+
     data: {
+
         labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+
         datasets: [
+
             {
                 label: 'Sales',
                 data: salesData,
                 borderWidth: 2,
                 tension: 0.4
             },
+
             {
                 label: 'Profit',
                 data: profitData,
                 borderWidth: 2,
                 tension: 0.4
             }
+
         ]
     },
+
     options: {
+
         responsive: true,
+
         maintainAspectRatio: false,
+
         plugins: {
+
             legend: {
                 position: 'top'
             }
+
         },
+
         scales: {
+
             y: {
                 beginAtZero: true
             }
+
         }
+
     }
+
 });
+
 </script>
 
 {% endblock %}

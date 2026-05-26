@@ -123,24 +123,32 @@
 
         }
 
-        /* DASHBOARD CARDS CLICK EFFECT */
+        /* DASHBOARD CARDS */
         .dashboard-link {
 
             text-decoration: none;
 
         }
 
-        .dashboard-link .card {
+        .dashboard-card {
+
+            border-radius: 16px;
+
+            padding: 25px;
+
+            color: white;
 
             transition: 0.3s;
 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+
         }
 
-        .dashboard-link .card:hover {
+        .dashboard-card:hover {
 
-            transform: translateY(-4px);
+            transform: translateY(-5px);
 
-            box-shadow: 0 6px 18px rgba(0,0,0,0.15);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.18);
 
         }
 
@@ -215,15 +223,13 @@
             Dashboard
         </h5>
 
-        <!-- SHOW USER NAME -->
         <div class="user-name">
-
-           Hello, {{ session.get('name') }}
-
+            Hello, {{ session.get('name') }}
         </div>
 
     </div>
 
+    <!-- PAGE CONTENT -->
     {% block content %}{% endblock %}
 
 </div>
