@@ -19,12 +19,14 @@
 
 <input type="text"
        id="farmerSearch"
-       class="form-control mb-2"
-       placeholder="Search farmer...">
+       class="form-control"
+       placeholder="Search & Select Farmer..."
+       autocomplete="off">
 
 <select name="farmer"
         id="farmerSelect"
-        class="form-control"
+        class="form-control mt-2"
+        size="5"
         required>
 
 <option value="">Select Farmer</option>
@@ -215,6 +217,7 @@ Submit Collection
 <!-- SCRIPT -->
 <script>
 
+// LIVE AMOUNT CALCULATION
 function calculate(){
 
     let qty =
@@ -232,7 +235,7 @@ function calculate(){
 }
 
 
-// LIVE CALCULATION
+// LIVE EVENTS
 document.getElementById("qty")
     .addEventListener("input", calculate)
 
@@ -251,7 +254,7 @@ window.addEventListener("DOMContentLoaded", () => {
 })
 
 
-// FARMER SEARCH
+// FARMER SEARCH DROPDOWN
 const searchInput =
     document.getElementById("farmerSearch");
 
@@ -265,11 +268,19 @@ searchInput.addEventListener("keyup", function () {
 
     for (let i = 0; i < farmerSelect.options.length; i++) {
 
-        let txt =
-            farmerSelect.options[i].text.toLowerCase();
+        let option = farmerSelect.options[i];
 
-        farmerSelect.options[i].style.display =
-            txt.includes(filter) ? "" : "none";
+        let txt =
+            option.text.toLowerCase();
+
+        if (txt.includes(filter) || option.value === "") {
+
+            option.style.display = "";
+
+        } else {
+
+            option.style.display = "none";
+        }
     }
 
 });
