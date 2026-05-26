@@ -151,6 +151,10 @@ def login():
             if user['status'] == 'approved':
 
                 session['user'] = user['phone']
+
+                # SAFE NAME STORAGE
+                session['name'] = user['name'] if user['name'] else "User"
+
                 return redirect('/')
 
             # PENDING

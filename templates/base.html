@@ -167,7 +167,7 @@
     </a>
 
     <!-- APPROVAL ONLY FOR PROPRIETOR -->
-    {% if session['user'] == '8073478057' %}
+    {% if session.get('user') == '8073478057' %}
 
     <a href="/approve_users">
         <i class="bi bi-person-check"></i> Approvals
@@ -194,10 +194,10 @@
             Dashboard
         </h5>
 
-        <!-- SHOW ONLY NAME -->
+        <!-- SHOW USER NAME -->
         <div class="user-name">
 
-            {{ session['name'] }}
+            {{ session.get('name', 'User') }}
 
         </div>
 
