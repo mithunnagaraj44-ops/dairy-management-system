@@ -622,34 +622,152 @@ def sales():
         error=error,
         success=success
     )
-# ================= HISTORY =================
-@app.route('/history', methods=['GET','POST'])
+@app.route('/history', methods=['GET', 'POST'])
 def history():
+
     db = get_db()
+
     if db is None:
         return "Database not connected"
 
     cursor = db.cursor(dictionary=True)
 
-    selected_date = request.form.get('date')
+    from datetime import date
+    import math
+
+    # ================= DATE FILTER =================
+    selected_date = request.args.get('date')
 
     if not selected_date:
-        from datetime import date
-        selected_date = date.today()
+        selected_date = str(date.today())
 
-    cursor.execute("""
-        SELECT m.id, f.name, m.qty, m.fat, m.amount, m.time
-        FROM milk_collection m
-        JOIN farmers f ON m.farmer_id = f.f_id
-        WHERE DATE(m.date)=%s
-        ORDER BY m.time ASC
-    """, (selected_date,))
+    # ================= SEARCH =================
+    search = request.args.get('search', '')
+
+    # ================= PAGINATION =================
+    page = request.args.get('page', 1, type=int)
+
+    per_page = 10
+
+    offset = (page - 1) * per_page
+
+    # ================= COUNT TOTAL RECORDS =================
+    if search:
+
+        cursor.execute("""
+
+            SELECT COUNT(*) AS total
+
+            FROM milk_collection m
+
+            JOIN farmers f
+            ON m.farmer_id = f.f_id
+
+            WHERE DATE(m.date)=%s
+            AND f.name LIKE %s
+
+        """, (selected_date, '%' + search + '%'))
+
+    else:
+
+        cursor.execute("""
+
+            SELECT COUNT(*) AS total
+
+            FROM milk_collection m
+
+            JOIN farmers f
+            ON m.farmer_id = f.f_id
+
+            WHERE DATE(m.date)=%s
+
+        """, (selected_date,))
+
+    total_records = cursor.fetchone()['total']
+
+    total_pages = math.ceil(total_records / per_page)
+
+    # ================= FETCH DATA =================
+    if search:
+
+        cursor.execute("""
+
+            SELECT
+            m.id,
+            f.name,
+            m.qty,
+            m.fat,
+            m.amount,
+            m.time
+
+            FROM milk_collection m
+
+            JOIN farmers f
+            ON m.farmer_id = f.f_id
+
+            WHERE DATE(m.date)=%s
+            AND f.name LIKE %s
+
+            ORDER BY m.time ASC
+
+            LIMIT %s OFFSET %s
+
+        """, (
+            selected_date,
+            '%' + search + '%',
+            per_page,
+            offset
+        ))
+
+    else:
+
+        cursor.execute("""
+
+            SELECT
+            m.id,
+            f.name,
+            m.qty,
+            m.fat,
+            m.amount,
+            m.time
+
+            FROM milk_collection m
+
+            JOIN farmers f
+            ON m.farmer_id = f.f_id
+
+            WHERE DATE(m.date)=%s
+
+            ORDER BY m.time ASC
+
+            LIMIT %s OFFSET %s
+
+        """, (
+            selected_date,
+            per_page,
+            offset
+        ))
 
     data = cursor.fetchall()
+
     cursor.close()
     db.close()
 
-    return render_template('history.html', data=data, selected_date=selected_date)
+    return render_template(
+
+        'history.html',
+
+        data=data,
+
+        selected_date=selected_date,
+
+        search=search,
+
+        page=page,
+
+        total_pages=total_pages
+
+    )
 
 
 # ================= PROFIT =================

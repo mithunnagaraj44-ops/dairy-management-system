@@ -6,18 +6,31 @@
 
 <h2 class="mb-4 fw-bold">📅 Milk Collection History</h2>
 
-<!-- DATE FILTER -->
+<!-- FILTERS -->
 <div class="card card-box p-3 mb-4">
 
-<form method="POST" class="d-flex align-items-center gap-3">
+<form method="GET"
+      class="d-flex align-items-center gap-3 flex-wrap">
 
-<label class="fw-semibold mb-0">Select Date:</label>
+<label class="fw-semibold mb-0">
+Select Date:
+</label>
 
 <input type="date"
        name="date"
        value="{{ selected_date }}"
-       class="form-control w-auto"
-       onchange="this.form.submit()">
+       class="form-control w-auto">
+
+<!-- SEARCH -->
+<input type="text"
+       name="search"
+       placeholder="Search farmer..."
+       value="{{ search }}"
+       class="form-control w-auto">
+
+<button class="btn btn-primary">
+<i class="bi bi-search"></i> Search
+</button>
 
 </form>
 
@@ -26,12 +39,16 @@
 <!-- TABLE -->
 <div class="card card-box p-4">
 
-<h5 class="fw-semibold mb-3">Collection Records</h5>
+<h5 class="fw-semibold mb-3">
+Collection Records
+</h5>
 
 <div class="table-responsive">
+
 <table class="table table-striped table-hover align-middle">
 
 <thead class="table-light">
+
 <tr>
 <th>ID</th>
 <th>Farmer</th>
@@ -41,34 +58,104 @@
 <th>Status</th>
 <th>Time</th>
 </tr>
+
 </thead>
 
 <tbody>
+
 {% for row in data %}
+
 <tr>
+
 <td>{{ row.id }}</td>
+
 <td>{{ row.name }}</td>
+
 <td>{{ row.qty }}</td>
+
 <td>{{ row.fat }}</td>
+
 <td>₹ {{ row.amount }}</td>
 
 <td>
-<span class="badge bg-success">Completed</span>
+<span class="badge bg-success">
+Completed
+</span>
 </td>
 
 <td>{{ row.time }}</td>
+
 </tr>
 
 {% else %}
+
 <tr>
-<td colspan="7" class="text-center text-muted">
-No records found for selected date
+
+<td colspan="7"
+    class="text-center text-muted">
+
+No records found
+
 </td>
+
 </tr>
+
 {% endfor %}
+
 </tbody>
 
 </table>
+
+</div>
+
+<!-- PAGINATION -->
+<div class="d-flex justify-content-center mt-4">
+
+<!-- PREVIOUS -->
+{% if page > 1 %}
+
+<a href="{{ url_for('history',
+                     page=page-1,
+                     date=selected_date,
+                     search=search) }}"
+   class="btn btn-outline-primary me-2">
+
+Previous
+
+</a>
+
+{% endif %}
+
+<!-- PAGE NUMBERS -->
+{% for p in range(1, total_pages + 1) %}
+
+<a href="{{ url_for('history',
+                     page=p,
+                     date=selected_date,
+                     search=search) }}"
+   class="btn {% if p == page %}btn-primary{% else %}btn-outline-primary{% endif %} me-1">
+
+{{ p }}
+
+</a>
+
+{% endfor %}
+
+<!-- NEXT -->
+{% if page < total_pages %}
+
+<a href="{{ url_for('history',
+                     page=page+1,
+                     date=selected_date,
+                     search=search) }}"
+   class="btn btn-outline-primary ms-2">
+
+Next
+
+</a>
+
+{% endif %}
+
 </div>
 
 </div>
