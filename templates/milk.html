@@ -26,17 +26,21 @@
 <!-- CUSTOM DROPDOWN -->
 <div id="farmerDropdown"
      class="shadow bg-white border rounded-3 position-absolute w-100 mt-1 d-none"
-     style="max-height:220px;
-            overflow-y:auto;
-            z-index:1000;">
+     style="
+        max-height:220px;
+        overflow-y:auto;
+        z-index:1000;
+     ">
 
 {% for f in farmers %}
 
 <div class="farmer-item px-3 py-2 border-bottom"
      data-id="{{f.f_id}}"
      data-name="{{f.name}}"
-     style="cursor:pointer;
-            transition:0.2s;">
+     style="
+        cursor:pointer;
+        transition:0.2s;
+     ">
 
     <div class="fw-semibold">
 
@@ -167,7 +171,7 @@ Submit Collection
 
 </div>
 
-<!-- RECENT COLLECTIONS -->
+<!-- TODAY COLLECTIONS -->
 <div class="card p-4 mt-4 shadow-sm rounded-4 border-0">
 
 <h4 class="fw-semibold">Today's Collections</h4>
@@ -231,6 +235,62 @@ Submit Collection
 
 </div>
 
+<!-- PAGINATION -->
+<nav class="mt-4">
+
+<ul class="pagination justify-content-center">
+
+{% if page > 1 %}
+
+<li class="page-item">
+
+<a class="page-link"
+   href="/milk?page={{ page-1 }}">
+
+Previous
+
+</a>
+
+</li>
+
+{% endif %}
+
+
+{% for p in range(1, total_pages + 1) %}
+
+<li class="page-item {% if p == page %}active{% endif %}">
+
+<a class="page-link"
+   href="/milk?page={{ p }}">
+
+{{ p }}
+
+</a>
+
+</li>
+
+{% endfor %}
+
+
+{% if page < total_pages %}
+
+<li class="page-item">
+
+<a class="page-link"
+   href="/milk?page={{ page+1 }}">
+
+Next
+
+</a>
+
+</li>
+
+{% endif %}
+
+</ul>
+
+</nav>
+
 </div>
 
 </div>
@@ -238,7 +298,7 @@ Submit Collection
 <!-- SCRIPT -->
 <script>
 
-// LIVE AMOUNT CALCULATION
+// LIVE AMOUNT
 function calculate(){
 
     let qty =
@@ -255,16 +315,14 @@ function calculate(){
         amount > 0 ? amount.toFixed(2) : ""
 }
 
-
-// LIVE EVENTS
 document.getElementById("qty")
-    .addEventListener("input", calculate)
+.addEventListener("input", calculate)
 
 document.getElementById("fat")
-    .addEventListener("input", calculate)
+.addEventListener("input", calculate)
 
 
-// AUTO TODAY DATE
+// AUTO DATE
 window.addEventListener("DOMContentLoaded", () => {
 
     let today =
@@ -275,65 +333,65 @@ window.addEventListener("DOMContentLoaded", () => {
 })
 
 
-// FARMER SEARCH DROPDOWN
+// SEARCH DROPDOWN
 const searchInput =
-    document.getElementById("farmerSearch");
+document.getElementById("farmerSearch")
 
 const dropdown =
-    document.getElementById("farmerDropdown");
+document.getElementById("farmerDropdown")
 
 const farmerItems =
-    document.querySelectorAll(".farmer-item");
+document.querySelectorAll(".farmer-item")
 
 const selectedFarmer =
-    document.getElementById("selectedFarmer");
+document.getElementById("selectedFarmer")
 
 
-// SHOW DROPDOWN ONLY WHEN CLICK
+// SHOW DROPDOWN
 searchInput.addEventListener("focus", () => {
 
-    dropdown.classList.remove("d-none");
+    dropdown.classList.remove("d-none")
 
-});
+})
 
 
-// SEARCH FILTER
-searchInput.addEventListener("keyup", function () {
+// FILTER
+searchInput.addEventListener("keyup", function(){
 
     let filter =
-        this.value.toLowerCase();
+        this.value.toLowerCase()
 
     farmerItems.forEach(item => {
 
         let txt =
-            item.innerText.toLowerCase();
+            item.innerText.toLowerCase()
 
         item.style.display =
             txt.includes(filter)
             ? "block"
-            : "none";
+            : "none"
 
-    });
+    })
 
-});
+})
 
 
 // SELECT FARMER
 farmerItems.forEach(item => {
 
-    item.addEventListener("click", function () {
+    item.addEventListener("click", function(){
 
         searchInput.value =
-            this.dataset.name;
+            this.dataset.name
 
         selectedFarmer.value =
-            this.dataset.id;
+            this.dataset.id
 
-        dropdown.classList.add("d-none");
+        dropdown.classList.add("d-none")
 
-    });
+    })
 
-});
+})
 
 
 // CLOSE DROPDOWN
@@ -342,11 +400,11 @@ document.addEventListener("click", function(e){
     if(!searchInput.contains(e.target) &&
        !dropdown.contains(e.target)){
 
-        dropdown.classList.add("d-none");
+        dropdown.classList.add("d-none")
 
     }
 
-});
+})
 
 
 // HOVER EFFECT
@@ -354,17 +412,17 @@ farmerItems.forEach(item => {
 
     item.addEventListener("mouseenter", () => {
 
-        item.style.background = "#f4f6f9";
+        item.style.background = "#f4f6f9"
 
-    });
+    })
 
     item.addEventListener("mouseleave", () => {
 
-        item.style.background = "white";
+        item.style.background = "white"
 
-    });
+    })
 
-});
+})
 
 </script>
 

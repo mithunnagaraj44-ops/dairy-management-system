@@ -399,6 +399,7 @@ def farmers():
 def milk():
 
     from datetime import date
+    from flask import request
 
     db = get_db()
 
@@ -411,13 +412,19 @@ def milk():
     if request.method == 'POST':
 
         farmer_id = request.form['farmer']
+
         qty = float(request.form['qty'])
+
         fat = float(request.form['fat'])
+
         session_type = request.form['session']
+
         collection_date = request.form['date']
+
         time = request.form['time']
 
         rate = 25 + (fat * 7)
+
         amount = qty * rate
 
         cursor.execute("""
@@ -436,16 +443,47 @@ def milk():
 
         db.commit()
 
-    # ================= TODAY COLLECTIONS ONLY =================
+    # ================= PAGINATION =================
     today = date.today()
 
+    page = request.args.get('page', 1, type=int)
+
+    per_page = 10
+
+    offset = (page - 1) * per_page
+
+    # ================= TOTAL RECORDS =================
+    cursor.execute("""
+        SELECT COUNT(*) as total
+        FROM milk_collection
+        WHERE DATE(date) = %s
+    """, (today,))
+
+    total_records = cursor.fetchone()['total']
+
+    total_pages = (
+        total_records + per_page - 1
+    ) // per_page
+
+    # ================= TODAY COLLECTIONS =================
     cursor.execute("""
         SELECT m.*, f.name
+
         FROM milk_collection m
-        JOIN farmers f ON m.farmer_id = f.f_id
+
+        JOIN farmers f
+        ON m.farmer_id = f.f_id
+
         WHERE DATE(m.date) = %s
+
         ORDER BY m.id DESC
-    """, (today,))
+
+        LIMIT %s OFFSET %s
+    """, (
+        today,
+        per_page,
+        offset
+    ))
 
     data = cursor.fetchall()
 
@@ -464,7 +502,9 @@ def milk():
     return render_template(
         'milk.html',
         data=data,
-        farmers=farmers
+        farmers=farmers,
+        page=page,
+        total_pages=total_pages
     )
 
 # ================= PAYMENTS =================
