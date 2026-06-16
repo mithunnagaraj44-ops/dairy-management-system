@@ -508,32 +508,33 @@ def milk():
     )
 
 # ================= PAYMENTS =================
-@app.route('/payments', methods=['GET','POST'])
+@app.route('/payments', methods=['GET', 'POST'])
 def payments():
+
     db = get_db()
     if db is None:
         return "Database not connected"
 
     cursor = db.cursor(dictionary=True)
 
-    # ================= INSERT =================
+    # ================= INSERT PAYMENT =================
     if request.method == 'POST':
+
         farmer_id = request.form['farmer']
         amount = float(request.form['amount'])
         status = request.form['status']
 
-        # INSERT WITHOUT user_phone
         cursor.execute("""
-            INSERT INTO payments 
+            INSERT INTO payments
             (farmer_id, total_amount, status, payment_date)
-            VALUES (%s,%s,%s,CURDATE())
+            VALUES (%s, %s, %s, CURDATE())
         """, (farmer_id, amount, status))
 
         db.commit()
 
     # ================= SUMMARY =================
     cursor.execute("""
-        SELECT 
+        SELECT
             f.f_id,
             f.name,
             f.farmer_code,
@@ -547,7 +548,7 @@ def payments():
             IFNULL((
                 SELECT SUM(p.total_amount)
                 FROM payments p
-                WHERE p.farmer_id = f.f_id 
+                WHERE p.farmer_id = f.f_id
                 AND p.status='Paid'
             ), 0) AS paid,
 
@@ -558,25 +559,45 @@ def payments():
             ) AS payment_date
 
         FROM farmers f
+        ORDER BY f.farmer_code
     """)
 
     data = cursor.fetchall()
 
-    # ================= CALCULATE PENDING =================
+    # ================= CALCULATE =================
     for row in data:
+
         total = float(row['total_milk'] or 0)
         paid = float(row['paid'] or 0)
-        pending = total - paid
-        row['total_amount'] = round(max(pending, 0), 2)
+
+        # Show total milk value always
+        row['total_amount'] = round(total, 2)
+
+        # Pending amount
+        row['pending_amount'] = round(max(total - paid, 0), 2)
+
+        # Status
+        if total > 0 and paid >= total:
+            row['status'] = 'Paid'
+        else:
+            row['status'] = 'Unpaid'
 
     # ================= FARMERS DROPDOWN =================
-    cursor.execute("SELECT * FROM farmers")
+    cursor.execute("""
+        SELECT *
+        FROM farmers
+        ORDER BY farmer_code
+    """)
     farmers = cursor.fetchall()
+
     cursor.close()
     db.close()
 
-    return render_template('payments.html', data=data, farmers=farmers)
-
+    return render_template(
+        'payments.html',
+        data=data,
+        farmers=farmers
+    )
 # ================= STOCK =================
 @app.route('/stock', methods=['GET','POST'])
 def stock():

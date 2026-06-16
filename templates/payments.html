@@ -74,15 +74,11 @@ Record Settlement
 <td>{{ row.farmer_code }} - {{ row.name }}</td>
 
 <td>
-{% if row.total_amount == 0 %}
-<span class="badge bg-success">Paid</span>
-{% else %}
-₹ {{ row.total_amount }}
-{% endif %}
+₹ {{ "%.2f"|format(row.total_amount) }}
 </td>
 
 <td>
-{% if row.total_amount == 0 %}
+{% if row.status == 'Paid' %}
 <span class="badge bg-success">Paid</span>
 {% else %}
 <span class="badge bg-danger">Unpaid</span>
@@ -92,11 +88,12 @@ Record Settlement
 <td>{{ row.payment_date or '-' }}</td>
 
 <td>
-{% if row.total_amount > 0 %}
+{% if row.pending_amount > 0 %}
 <form method="POST" action="/payments">
     <input type="hidden" name="farmer" value="{{row.f_id}}">
-    <input type="hidden" name="amount" value="{{row.total_amount}}">
+    <input type="hidden" name="amount" value="{{row.pending_amount}}">
     <input type="hidden" name="status" value="Paid">
+
     <button class="btn btn-success btn-sm">
         Mark Paid
     </button>
@@ -107,10 +104,15 @@ Record Settlement
 </td>
 
 </tr>
+
 {% else %}
+
 <tr>
-<td colspan="5" class="text-center text-muted">No data found</td>
+<td colspan="5" class="text-center text-muted">
+No data found
+</td>
 </tr>
+
 {% endfor %}
 </tbody>
 
