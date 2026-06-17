@@ -931,13 +931,13 @@ def profit():
     db.close()
 
     return render_template(
-        'profit.html',
-        sales=sales,
-        payments=payments,
-        net_profit=net_profit,
-        sales_data=sales_data,
-        profit_data=profit_data
-    )
+    'profit.html',
+    sales=f"{sales:.2f}",
+    payments=f"{payments:.2f}",
+    net_profit=f"{net_profit:.2f}",
+    sales_data=sales_data,
+    profit_data=profit_data
+)
 
 
 @app.route('/edit/<int:id>', methods=['GET','POST'])
