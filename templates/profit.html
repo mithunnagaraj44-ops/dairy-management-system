@@ -1,89 +1,67 @@
-{% extends 'base.html' %}
+# ================= PROFIT =================
+@app.route('/profit')
+def profit():
+    db = get_db()
+    if db is None:
+        return "Database not connected"
 
-{% block content %}
+    cursor = db.cursor(dictionary=True)
 
-<div class="container-fluid p-4">
+    # ================= TOTAL SALES =================
+    cursor.execute("SELECT IFNULL(SUM(total),0) as total FROM sales")
+    res = cursor.fetchone()
+    sales = float(res['total'] if res and res['total'] else 0)
 
-    <h2 class="mb-4 fw-bold">📈 Profit Report</h2>
+    # ================= TOTAL PAYMENTS =================
+    cursor.execute("SELECT IFNULL(SUM(total_amount),0) as total FROM payments")
+    res = cursor.fetchone()
+    payments = float(res['total'] if res and res['total'] else 0)
 
-    <div class="row g-4">
+    # Round values
+    sales = round(sales, 2)
+    payments = round(payments, 2)
+    net_profit = round(sales - payments, 2)
 
-        <div class="col-md-4">
-            <div class="card bg-success text-white p-3 card-box">
-                <h6><i class="bi bi-cart"></i> Total Sales</h6>
-                <h2>₹ {{ "%.2f"|format(sales) }}</h2>
-            </div>
-        </div>
+    # ================= MONTHLY SALES =================
+    cursor.execute("""
+        SELECT MONTH(date) as m, IFNULL(SUM(total),0) as total
+        FROM sales
+        GROUP BY MONTH(date)
+    """)
 
-        <div class="col-md-4">
-            <div class="card bg-warning text-white p-3 card-box">
-                <h6><i class="bi bi-cash"></i> Total Payments</h6>
-                <h2>₹ {{ "%.2f"|format(payments) }}</h2>
-            </div>
-        </div>
+    sales_data = [0] * 6
 
-        <div class="col-md-4">
-            <div class="card bg-primary text-white p-3 card-box">
-                <h6><i class="bi bi-graph-up"></i> Net Profit</h6>
-                <h2>₹ {{ "%.2f"|format(net_profit) }}</h2>
-            </div>
-        </div>
+    for row in cursor.fetchall():
+        if row['m'] and 1 <= row['m'] <= 6:
+            sales_data[row['m'] - 1] = float(row['total'])
 
-    </div>
+    # ================= MONTHLY PAYMENTS =================
+    cursor.execute("""
+        SELECT MONTH(payment_date) as m, IFNULL(SUM(total_amount),0) as total
+        FROM payments
+        GROUP BY MONTH(payment_date)
+    """)
 
-    <br>
+    payment_data = [0] * 6
 
-    <div class="card p-4 card-box">
-        <h5 class="fw-semibold">📊 Monthly Profit Trend</h5>
+    for row in cursor.fetchall():
+        if row['m'] and 1 <= row['m'] <= 6:
+            payment_data[row['m'] - 1] = float(row['total'])
 
-        <div style="height:300px;">
-            <canvas id="chart"></canvas>
-        </div>
-    </div>
+    # ================= PROFIT DATA =================
+    profit_data = [
+        round(sales_data[i] - payment_data[i], 2)
+        for i in range(6)
+    ]
 
-</div>
+    cursor.close()
+    db.close()
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-<script>
-const ctx = document.getElementById('chart');
-
-const salesData = JSON.parse('{{ sales_data | tojson }}');
-const profitData = JSON.parse('{{ profit_data | tojson }}');
-
-new Chart(ctx, {
-    type: 'bar',
-    data: {
-        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-        datasets: [
-            {
-                label: 'Sales',
-                data: salesData,
-                borderWidth: 2
-            },
-            {
-                label: 'Profit',
-                data: profitData,
-                borderWidth: 2
-            }
-        ]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-            legend: {
-                position: 'top'
-            }
-        },
-        scales: {
-            y: {
-                beginAtZero: true
-            }
-        }
-    }
-});
-</script>
-
-{% endblock %}
-
+    return render_template(
+        'profit.html',
+        sales=sales,
+        payments=payments,
+        net_profit=net_profit,
+        sales_data=sales_data,
+        profit_data=profit_data
+    )
