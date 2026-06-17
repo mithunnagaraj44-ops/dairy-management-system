@@ -899,6 +899,8 @@ def profit():
     cursor.execute("SELECT IFNULL(SUM(total_amount),0) as total FROM payments")
     res = cursor.fetchone()
     payments = float(res['total'] if res and res['total'] else 0)
+
+    # Round values
     sales = round(sales, 2)
     payments = round(payments, 2)
     net_profit = round(sales - payments, 2)
@@ -909,10 +911,12 @@ def profit():
         FROM sales
         GROUP BY MONTH(date)
     """)
-    sales_data = [0]*6
+
+    sales_data = [0] * 6
+
     for row in cursor.fetchall():
         if row['m'] and 1 <= row['m'] <= 6:
-            sales_data[row['m']-1] = float(row['total'])
+            sales_data[row['m'] - 1] = float(row['total'])
 
     # ================= MONTHLY PAYMENTS =================
     cursor.execute("""
@@ -920,24 +924,30 @@ def profit():
         FROM payments
         GROUP BY MONTH(payment_date)
     """)
-    payment_data = [0]*6
+
+    payment_data = [0] * 6
+
     for row in cursor.fetchall():
         if row['m'] and 1 <= row['m'] <= 6:
-            payment_data[row['m']-1] = float(row['total'])
+            payment_data[row['m'] - 1] = float(row['total'])
 
-    # ================= PROFIT =================
-    profit_data = [sales_data[i] - payment_data[i] for i in range(6)]
+    # ================= PROFIT DATA =================
+    profit_data = [
+        round(sales_data[i] - payment_data[i], 2)
+        for i in range(6)
+    ]
+
     cursor.close()
     db.close()
 
     return render_template(
-    'profit.html',
-    sales=f"{sales:.2f}",
-    payments=f"{payments:.2f}",
-    net_profit=f"{net_profit:.2f}",
-    sales_data=sales_data,
-    profit_data=profit_data
-)
+        'profit.html',
+        sales=sales,
+        payments=payments,
+        net_profit=net_profit,
+        sales_data=sales_data,
+        profit_data=profit_data
+    )
 
 
 @app.route('/edit/<int:id>', methods=['GET','POST'])
