@@ -899,8 +899,9 @@ def profit():
     cursor.execute("SELECT IFNULL(SUM(total_amount),0) as total FROM payments")
     res = cursor.fetchone()
     payments = float(res['total'] if res and res['total'] else 0)
-
-    net_profit = sales - payments
+    sales = round(sales, 2)
+    payments = round(payments, 2)
+    net_profit = round(sales - payments, 2)
 
     # ================= MONTHLY SALES =================
     cursor.execute("""
