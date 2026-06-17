@@ -194,6 +194,7 @@ def logout():
     return redirect('/login')
 
 
+
 # ================= DASHBOARD =================
 @app.route('/')
 def home():
@@ -215,27 +216,38 @@ def home():
     cursor.execute("SELECT IFNULL(SUM(total),0) as total FROM sales")
     sales = float(cursor.fetchone()['total'] or 0)
 
-    profit = sales - payments
+    # Round values to 2 decimals
+    payments = round(payments, 2)
+    sales = round(sales, 2)
+    profit = round(sales - payments, 2)
 
     cursor.execute("""
         SELECT MONTH(date) as m, IFNULL(SUM(total),0) as total
-        FROM sales GROUP BY MONTH(date)
+        FROM sales
+        GROUP BY MONTH(date)
     """)
-    sales_data = [0]*6
+    sales_data = [0] * 6
+
     for row in cursor.fetchall():
         if row['m'] and 1 <= row['m'] <= 6:
-            sales_data[row['m']-1] = float(row['total'])
+            sales_data[row['m'] - 1] = float(row['total'])
 
     cursor.execute("""
-        SELECT MONTH(payment_date) as m, IFNULL(SUM(total_amount),0) as total
-        FROM payments GROUP BY MONTH(payment_date)
+        SELECT MONTH(payment_date) as m,
+               IFNULL(SUM(total_amount),0) as total
+        FROM payments
+        GROUP BY MONTH(payment_date)
     """)
-    payment_data = [0]*6
+    payment_data = [0] * 6
+
     for row in cursor.fetchall():
         if row['m'] and 1 <= row['m'] <= 6:
-            payment_data[row['m']-1] = float(row['total'])
+            payment_data[row['m'] - 1] = float(row['total'])
 
-    profit_data = [sales_data[i] - payment_data[i] for i in range(6)]
+    profit_data = [
+        round(sales_data[i] - payment_data[i], 2)
+        for i in range(6)
+    ]
 
     cursor.close()
     db.close()
@@ -250,6 +262,8 @@ def home():
         sales_data=sales_data,
         profit_data=profit_data
     )
+
+
 
 # ================= FARMERS =================
 @app.route('/farmers', methods=['GET', 'POST'])
